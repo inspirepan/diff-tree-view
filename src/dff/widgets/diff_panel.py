@@ -5,19 +5,20 @@ from typing import Any
 
 from rich.style import Style
 from rich.text import Text
-from textual import containers
+from textual import containers, events
 from textual._loop import loop_last
 from textual._segment_tools import line_pad
 from textual.app import ComposeResult
 from textual.containers import Vertical, VerticalScroll
 from textual.content import Content, Span
+from textual.message import Message
+from textual.reactive import reactive
 from textual.strip import Strip
 from textual.widgets import Static
 from textual_diff_view import DiffView
 from textual_diff_view._diff_view import (
     DiffCode,
     DiffScrollContainer,
-    Ellipsis,
     LineAnnotations,
     LineContent,
     fill_lists,
@@ -26,6 +27,52 @@ from textual_diff_view._diff_view import (
 from dff.config import UISettings
 from dff.models import Change, FileChange, FileSides
 from dff.theme import TreeThemeTokens
+
+Opcode = tuple[str, int, int, int, int]
+
+
+class ExpandableEllipsis(Static):
+    """Clickable `⋮` row that, when activated, expands the hidden equal lines.
+
+    Upstream renders a non-selectable `Ellipsis` between grouped opcodes. We
+    replace it with this widget so the user can click the marker and reveal
+    the unchanged lines that `SequenceMatcher.get_grouped_opcodes` trimmed
+    (default: lines more than 3 away from any change).
+    """
+
+    ALLOW_SELECT = False
+    DEFAULT_CSS = """
+    ExpandableEllipsis {
+        text-align: center;
+        width: 1fr;
+        color: $foreground;
+        text-style: bold;
+    }
+    ExpandableEllipsis:hover {
+        color: $accent;
+        text-style: bold;
+    }
+    """
+
+    class Activated(Message):
+        """Posted when the user clicks an `ExpandableEllipsis` to expand a gap."""
+
+        def __init__(self, gap_index: int) -> None:
+            super().__init__()
+            self.gap_index = gap_index
+
+    def __init__(self, gap_index: int, hidden_lines: int, *, background: str) -> None:
+        label = f"⋮  (hidden {hidden_lines} line{'s' if hidden_lines != 1 else ''})"
+        super().__init__(label)
+        self.gap_index = gap_index
+        # Themed muted-blue row that visually separates the "hidden" marker from
+        # neighbouring hunks. We apply it inline rather than in DEFAULT_CSS so
+        # each theme (dark / light) can ship its own hex via `TreeThemeTokens`.
+        self.styles.background = background
+
+    async def on_click(self, event: events.Click) -> None:
+        event.stop()
+        self.post_message(self.Activated(self.gap_index))
 
 
 class _BlankFilledLineContent(LineContent):
@@ -62,10 +109,22 @@ class TransparentDiffView(DiffView):
        in split view with blank space.
     """
 
+    _expanded_gaps: reactive[frozenset[int]] = reactive(frozenset(), recompose=True)
+    """Set of original gap indices the user has clicked to expand.
+
+    A gap index `k` refers to the gap between `grouped_opcodes[k]` and
+    `grouped_opcodes[k + 1]`. `recompose=True` so assigning a new frozenset
+    remounts the full view with the hidden lines spliced back in.
+    """
+
     def __init__(self, *args: Any, theme: TreeThemeTokens, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._diff_add_char_bg = theme.diff_add_char_bg
         self._diff_remove_char_bg = theme.diff_remove_char_bg
+        # Reuse the same muted blue that ChangeTree uses for change-group rows,
+        # so the "hidden N lines" marker reads as a row separator rather than
+        # as styled content.
+        self._ellipsis_bg = theme.change_row_bg
         # Shadow upstream's class-level dicts with theme-derived instance dicts.
         # The unchanged-row gutter uses the tree's `guides` color explicitly —
         # under `textual-ansi`, `$foreground 30%` / `$foreground 10%` flatten
@@ -112,6 +171,47 @@ class TransparentDiffView(DiffView):
 
     def watch_wrap(self, old: bool, new: bool) -> None:
         self.call_after_refresh(self._link_horizontal_scroll)
+
+    def watch__expanded_gaps(self, old: frozenset[int], new: frozenset[int]) -> None:
+        # `_expanded_gaps` has `recompose=True`, so assigning triggers a full
+        # remount. Re-link the scroll cycle once the new containers exist.
+        self.call_after_refresh(self._link_horizontal_scroll)
+
+    def on_expandable_ellipsis_activated(self, message: ExpandableEllipsis.Activated) -> None:
+        message.stop()
+        self._expanded_gaps = self._expanded_gaps | {message.gap_index}
+
+    def _effective_groups(self) -> tuple[list[list[Opcode]], list[tuple[int, int]]]:
+        """Merge `grouped_opcodes` at every expanded gap and report remaining gaps.
+
+        Returns:
+            (groups, gaps) where `groups` is a list of opcode lists (merged
+            at expanded boundaries) and `gaps` is a list of
+            `(original_gap_index, hidden_line_count)` tuples, one entry per
+            boundary between consecutive `groups`. `len(gaps) == len(groups) - 1`.
+        """
+        base = self.grouped_opcodes
+        expanded = self._expanded_gaps
+        if not base:
+            return [], []
+        groups: list[list[Opcode]] = [list(base[0])]
+        gaps: list[tuple[int, int]] = []
+        for idx in range(1, len(base)):
+            prev_tail = groups[-1][-1]
+            next_head = base[idx][0]
+            # The hidden equal region between the two hunks. `get_grouped_opcodes`
+            # never emits touching groups, so (i2 < i1') and (j2 < j1') both hold.
+            i_start, i_end = prev_tail[2], next_head[1]
+            j_start, j_end = prev_tail[4], next_head[3]
+            hidden = max(i_end - i_start, j_end - j_start)
+            if (idx - 1) in expanded:
+                gap_opcode: Opcode = ("equal", i_start, i_end, j_start, j_end)
+                groups[-1].append(gap_opcode)
+                groups[-1].extend(base[idx])
+            else:
+                gaps.append((idx - 1, hidden))
+                groups.append(list(base[idx]))
+        return groups, gaps
 
     def _link_horizontal_scroll(self) -> None:
         containers = list(self.query(DiffScrollContainer))
@@ -195,7 +295,8 @@ class TransparentDiffView(DiffView):
                 return annotation_hatch
             return annotation_blank
 
-        for last, group in loop_last(self.grouped_opcodes):
+        groups, gaps = self._effective_groups()
+        for group_index, (last, group) in enumerate(loop_last(groups)):
             line_numbers_a: list[int | None] = []
             line_numbers_b: list[int | None] = []
             annotations_a: list[str] = []
@@ -262,9 +363,10 @@ class TransparentDiffView(DiffView):
                 # TransparentDiffView cycles all containers in on_mount.
 
             if not last:
+                gap_index, hidden = gaps[group_index]
                 with containers.HorizontalGroup():
-                    yield Ellipsis("⋮")
-                    yield Ellipsis("⋮")
+                    yield ExpandableEllipsis(gap_index, hidden, background=self._ellipsis_bg)
+                    yield ExpandableEllipsis(gap_index, hidden, background=self._ellipsis_bg)
 
     def _compose_unified_clean(self) -> ComposeResult:
         # Mirror of upstream `_compose_unified` (no-wrap) using the same
@@ -282,7 +384,8 @@ class TransparentDiffView(DiffView):
         max_line_no = max(len(lines_a), len(lines_b))
         line_number_width = len(str(max_line_no)) if max_line_no else 1
 
-        for last, group in loop_last(self.grouped_opcodes):
+        groups, gaps = self._effective_groups()
+        for group_index, (last, group) in enumerate(loop_last(groups)):
             line_numbers_a: list[int | None] = []
             line_numbers_b: list[int | None] = []
             annotations: list[str] = []
@@ -355,7 +458,8 @@ class TransparentDiffView(DiffView):
                     yield DiffCode(_BlankFilledLineContent(code_lines, code_line_styles, width=global_line_width))
 
             if not last:
-                yield Ellipsis("⋮")
+                gap_index, hidden = gaps[group_index]
+                yield ExpandableEllipsis(gap_index, hidden, background=self._ellipsis_bg)
 
 
 class DiffHeader(Static):

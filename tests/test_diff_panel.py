@@ -7,6 +7,7 @@ from textual_diff_view import DiffView
 from dff.app import DffApp
 from dff.models import Change, FileChange, FileSides, HunkStats
 from dff.widgets import ChangeTree, DiffPanel
+from dff.widgets.diff_panel import ExpandableEllipsis, TransparentDiffView
 
 
 def make_change() -> Change:
@@ -170,3 +171,59 @@ async def test_diff_panel_toggle_split_flips_diff_view_reactive(tmp_path: Path) 
         await pilot.pause()
         views_after = list(panel.query(DiffView))
         assert views_after[0].split is not initial_split
+
+
+def _long_file_with_two_hunks(length: int = 60) -> tuple[str, str]:
+    """Build two versions of a long file that share a 20+ line unchanged middle
+    so `SequenceMatcher.get_grouped_opcodes` hides it between two hunks.
+    """
+    before = "\n".join(f"line{i}" for i in range(1, length + 1)) + "\n"
+    after = before.replace("line5", "LINE5").replace(f"line{length - 5}", f"LINE{length - 5}")
+    return before, after
+
+
+async def test_diff_panel_click_ellipsis_expands_hidden_lines(tmp_path: Path) -> None:
+    before, after = _long_file_with_two_hunks()
+    sides = {
+        "src/a.py": FileSides(before=before, after=after),
+        "src/b.bin": FileSides(before="", after="", binary=True),
+    }
+    backend = StubBackend(tmp_path, sides)
+    app = DffApp(backend.list_changes(), backend=backend, live_watch=False)
+
+    async with app.run_test(size=(180, 40)) as pilot:
+        await pilot.pause()
+        tree = app.query_one(ChangeTree)
+        panel = app.query_one(DiffPanel)
+
+        for _ in range(6):
+            await pilot.press("j")
+            await pilot.pause()
+            node = tree.cursor_node
+            if node is not None and node.data is not None and node.data.file is not None:
+                if node.data.file.path == "src/a.py":
+                    break
+        await pilot.pause()
+
+        view = panel.query_one(TransparentDiffView)
+        # Two hunks → exactly one expandable gap between them.
+        ellipses = list(view.query(ExpandableEllipsis))
+        assert ellipses, "expected at least one ExpandableEllipsis between hunks"
+        gap_index = ellipses[0].gap_index
+        initial_code_rows = sum(
+            sum(1 for line in dc._render().code_lines if line is not None)  # ty: ignore[unresolved-attribute]
+            for dc in view.query("DiffCode")
+        )
+
+        ellipses[0].post_message(ExpandableEllipsis.Activated(gap_index))
+        await pilot.pause()
+
+        assert gap_index in view._expanded_gaps
+        # After expansion, the ellipsis for that gap is gone (it was the only gap).
+        assert not list(view.query(ExpandableEllipsis))
+        expanded_code_rows = sum(
+            sum(1 for line in dc._render().code_lines if line is not None)  # ty: ignore[unresolved-attribute]
+            for dc in view.query("DiffCode")
+        )
+        # Hidden equal lines now visible → code row count strictly increased.
+        assert expanded_code_rows > initial_code_rows

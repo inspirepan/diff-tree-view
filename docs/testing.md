@@ -154,7 +154,7 @@ uv run pytest -m smoke              # CI-only tmux smoke layer
 - [ ] Unchanged regions longer than `fold.context_lines * 2 +
       always_expand_small` are folded.
 - [ ] Each fold renders an `N hidden lines ▾` marker.
-- [ ] Clicking the marker expands that fold only.
+- [x] Clicking the marker expands that fold only.
 - [ ] `Enter` on the fold marker (keyboard) also expands.
 - [ ] Expanded state survives a watcher refresh when the hunk map still
       contains the same region.
