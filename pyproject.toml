@@ -3,7 +3,7 @@ requires = ["uv_build>=0.8.5,<0.9.0"]
 build-backend = "uv_build"
 
 [project]
-name = "dff"
+name = "diff-tree-view"
 version = "0.0.1"
 description = "Terminal UI diff viewer for jujutsu and git"
 readme = "README.md"
@@ -17,10 +17,10 @@ dependencies = [
 ]
 
 [project.scripts]
-dff = "dff.cli:app"
+dff = "diff_tree_view.cli:app"
 
 [tool.uv.build-backend]
-module-name = "dff"
+module-name = "diff_tree_view"
 
 [dependency-groups]
 dev = [
@@ -56,7 +56,7 @@ select = ["E", "F", "B", "I", "UP", "SIM", "RUF"]
 ignore = ["RUF001", "RUF002", "RUF003", "E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["dff"]
+known-first-party = ["diff_tree_view"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["B", "SIM"]

@@ -263,7 +263,7 @@ uv run pytest -m smoke              # CI-only tmux smoke layer
 - [x] `UISettings` defaults to transparent background, bracket disclosure
       markers, single-child path collapsing, and the built-in dark tree
       tokens.
-- [x] `DffApp` applies transparent / opaque mode from `UISettings`.
+- [x] `DiffTreeViewApp` applies transparent / opaque mode from `UISettings`.
 - [x] `ChangeTree` applies built-in or custom tree color tokens from
       `UISettings`.
 - [x] `ChangeTree` applies disclosure marker style and guide density from

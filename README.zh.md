@@ -1,4 +1,4 @@
-# dff
+# diff-tree-view
 
 一个为 **jujutsu** 和 **git** 设计的终端 UI diff 查看器，灵感来自 VS Code 中的 VCS 面板。在仓库目录下运行 `dff`，即可获得交互式、键盘驱动的代码审查体验 — 左侧文件树，右侧富文本 diff，底部内联注释，可复制为 Claude 的 prompt。
 
@@ -226,7 +226,7 @@ TOML，加载顺序如下（后者覆盖前者）：
 需要 Python 3.14+。
 
 ```bash
-uv tool install dff          # once published
+uv tool install diff-tree-view  # once published
 # or for development:
 uv sync
 uv run dff
@@ -254,7 +254,7 @@ dff --mode unified           # override default diff mode
 ## 架构
 
 ```
-src/dff/
+src/diff_tree_view/
   cli.py                       CLI entry; arg parsing; backend detect
   app.py                       Textual App; composes tree/diff/comment bar
   layout.py                    Responsive breakpoint logic

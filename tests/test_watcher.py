@@ -3,11 +3,11 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
-from dff.app import DffApp
-from dff.models import Change, FileChange, FileSides, HunkStats
-from dff.vcs.base import Backend
-from dff.vcs.watcher import watch_repo
-from dff.widgets import ChangeTree
+from diff_tree_view.app import DiffTreeViewApp
+from diff_tree_view.models import Change, FileChange, FileSides, HunkStats
+from diff_tree_view.vcs.base import Backend
+from diff_tree_view.vcs.watcher import watch_repo
+from diff_tree_view.widgets import ChangeTree
 
 
 def node_label_plain(node) -> str:
@@ -70,7 +70,7 @@ def test_change_tree_reload_swaps_content_and_preserves_cursor_path() -> None:
                 (make_change("a.py", stats=HunkStats(9, 0)),),
             ],
         )
-        app = DffApp(backend.list_changes(), backend=backend, live_watch=False)
+        app = DiffTreeViewApp(backend.list_changes(), backend=backend, live_watch=False)
 
         async with app.run_test() as pilot:
             await pilot.pause()
@@ -104,7 +104,7 @@ def test_change_tree_reload_preserves_collapsed_group_and_directory() -> None:
             ),
         )
         backend = StubBackend(repo_root=Path("."), batches=[(change,), (change,)])
-        app = DffApp(backend.list_changes(), backend=backend, live_watch=False)
+        app = DiffTreeViewApp(backend.list_changes(), backend=backend, live_watch=False)
 
         async with app.run_test() as pilot:
             await pilot.pause()
@@ -132,7 +132,7 @@ def test_change_tree_reload_preserves_collapsed_group_and_directory() -> None:
 
 async def test_dff_app_schedules_watcher_when_backend_is_provided(tmp_path: Path) -> None:
     backend = StubBackend(repo_root=tmp_path, batches=[(make_change("demo.py"),)])
-    app = DffApp(backend.list_changes(), backend=backend, live_watch=True)
+    app = DiffTreeViewApp(backend.list_changes(), backend=backend, live_watch=True)
 
     async with app.run_test() as pilot:
         await pilot.pause()
@@ -141,7 +141,7 @@ async def test_dff_app_schedules_watcher_when_backend_is_provided(tmp_path: Path
 
 
 async def test_dff_app_does_not_start_watcher_without_backend() -> None:
-    app = DffApp([make_change("demo.py")])
+    app = DiffTreeViewApp([make_change("demo.py")])
 
     async with app.run_test() as pilot:
         await pilot.pause()
@@ -162,7 +162,7 @@ async def test_dff_app_reload_action_refreshes_tree_from_backend(tmp_path: Path)
             (make_change("a.py", stats=HunkStats(42, 0)),),
         ],
     )
-    app = DffApp(backend.list_changes(), backend=backend, live_watch=False)
+    app = DiffTreeViewApp(backend.list_changes(), backend=backend, live_watch=False)
 
     async with app.run_test() as pilot:
         await pilot.pause()

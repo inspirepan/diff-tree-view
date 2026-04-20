@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from rich.color import Color
 
-from dff.app import DffApp
-from dff.config import UISettings
-from dff.models import Change, FileChange, HunkStats
-from dff.widgets import ChangeTree, StatusBar
+from diff_tree_view.app import DiffTreeViewApp
+from diff_tree_view.config import UISettings
+from diff_tree_view.models import Change, FileChange, HunkStats
+from diff_tree_view.widgets import ChangeTree, StatusBar
 
 
 async def test_dff_app_uses_textual_ansi_and_transparent_backgrounds() -> None:
-    app = DffApp(
+    app = DiffTreeViewApp(
         [
             Change(
                 change_id="demo",
@@ -48,7 +48,7 @@ async def test_dff_app_uses_textual_ansi_and_transparent_backgrounds() -> None:
 
 
 async def test_dff_app_renders_status_bar_hints() -> None:
-    app = DffApp(
+    app = DiffTreeViewApp(
         [
             Change(
                 change_id="demo",
@@ -74,7 +74,7 @@ async def test_dff_app_renders_status_bar_hints() -> None:
 
 
 async def test_dff_app_global_q_binding_quits() -> None:
-    app = DffApp(
+    app = DiffTreeViewApp(
         [
             Change(
                 change_id="demo",
@@ -96,7 +96,7 @@ async def test_dff_app_global_q_binding_quits() -> None:
 
 
 async def test_dff_app_applies_opaque_mode_from_ui_settings() -> None:
-    app = DffApp(
+    app = DiffTreeViewApp(
         [
             Change(
                 change_id="demo",

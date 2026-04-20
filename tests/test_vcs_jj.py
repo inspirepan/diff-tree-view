@@ -3,9 +3,9 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from dff.models import FileSides, HunkStats
-from dff.vcs.base import Backend
-from dff.vcs.jj import JjBackend
+from diff_tree_view.models import FileSides, HunkStats
+from diff_tree_view.vcs.base import Backend
+from diff_tree_view.vcs.jj import JjBackend
 
 
 def run(args: list[str], cwd: Path) -> None:

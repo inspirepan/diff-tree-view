@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from dff import terminal
-from dff.terminal import (
+from diff_tree_view import terminal
+from diff_tree_view.terminal import (
     _luminance_is_light,
     _parse_osc_color_response,
     _parse_rgb_spec,
     _scale_hex_component,
     detect_tree_theme_name,
 )
-from dff.theme import BuiltinTreeThemeName
+from diff_tree_view.theme import BuiltinTreeThemeName
 
 
 def test_parse_rgb_spec_accepts_xterm_16bit_form() -> None:

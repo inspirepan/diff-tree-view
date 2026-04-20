@@ -3,8 +3,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from dff.models import Change, FileChange, FileSides, HunkStats
-from dff.vcs.base import BackendError
+from diff_tree_view.models import Change, FileChange, FileSides, HunkStats
+from diff_tree_view.vcs.base import BackendError
 
 DEFAULT_REVSET = "trunk()..@"
 

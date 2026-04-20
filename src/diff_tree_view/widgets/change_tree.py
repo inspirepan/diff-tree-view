@@ -16,8 +16,8 @@ from textual.strip import Strip
 from textual.widgets import Tree
 from textual.widgets._tree import TreeNode
 
-from dff.config import TreeDisclosureStyle, UISettings
-from dff.models import Change, FileChange, HunkStats
+from diff_tree_view.config import TreeDisclosureStyle, UISettings
+from diff_tree_view.models import Change, FileChange, HunkStats
 
 
 @dataclass(slots=True)

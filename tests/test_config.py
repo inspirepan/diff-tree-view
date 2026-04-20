@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dff.config import TreeDisclosureStyle, UISettings
-from dff.theme import DARK_TREE_TOKENS, BuiltinTreeThemeName
+from diff_tree_view.config import TreeDisclosureStyle, UISettings
+from diff_tree_view.theme import DARK_TREE_TOKENS, BuiltinTreeThemeName
 
 
 def test_ui_settings_defaults_use_dark_tree_tokens_and_bracket_disclosure() -> None:

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dff.vcs.base import Backend
-from dff.vcs.git import GitBackend
-from dff.vcs.jj import JjBackend
+from diff_tree_view.vcs.base import Backend
+from diff_tree_view.vcs.git import GitBackend
+from diff_tree_view.vcs.jj import JjBackend
 
 
 class DetectError(RuntimeError):

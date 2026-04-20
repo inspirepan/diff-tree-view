@@ -45,7 +45,7 @@ wheels = [
 ]
 
 [[package]]
-name = "dff"
+name = "diff-tree-view"
 version = "0.0.1"
 source = { editable = "." }
 dependencies = [

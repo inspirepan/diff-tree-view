@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from dff.vcs.detect import DetectError, detect_backend, find_repo_root
-from dff.vcs.git import GitBackend
-from dff.vcs.jj import JjBackend
+from diff_tree_view.vcs.detect import DetectError, detect_backend, find_repo_root
+from diff_tree_view.vcs.git import GitBackend
+from diff_tree_view.vcs.jj import JjBackend
 
 
 def test_detect_backend_picks_jj_when_only_jj_is_present(tmp_path: Path) -> None:

@@ -87,7 +87,7 @@ subprocess directly): stop and add a method on the backend instead.
   `target-version = "py314"` — ruff's `UP` rules will rewrite code to
   3.14 idioms; do not resist them.
 - **Format**: `ruff format` (not black, not isort; ruff handles both).
-  Imports are sorted by `ruff` with `known-first-party = ["dff"]`.
+  Imports are sorted by `ruff` with `known-first-party = ["diff_tree_view"]`.
 - **Type check**: `ty` (Astral's type checker). Config in
   `pyproject.toml`: `python-version = "3.14"`, strict rules for
   `possibly-unresolved-reference`, `unused-ignore-comment`,
@@ -137,7 +137,7 @@ feature — never commit formatting noise separately.
 
 ## Textual-specific rules
 
-- **Every new widget** gets a CSS entry in `src/dff/app.tcss` with
+- **Every new widget** gets a CSS entry in `src/diff_tree_view/app.tcss` with
   `border: none` unless a specific exception is justified. We use
   background shade and `.pill` labels for region separation — see
   "Visual design" in `README.md`.

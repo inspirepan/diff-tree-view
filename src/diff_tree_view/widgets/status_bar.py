@@ -6,8 +6,8 @@ from textual._segment_tools import line_pad
 from textual.strip import Strip
 from textual.widgets import Static
 
-from dff.config import UISettings
-from dff.theme import BuiltinTreeThemeName
+from diff_tree_view.config import UISettings
+from diff_tree_view.theme import BuiltinTreeThemeName
 
 
 def _hint_palette(ui: UISettings) -> tuple[str, str, str]:
@@ -23,7 +23,7 @@ class StatusBar(Static):
 
     def _split_supported(self) -> bool:
         # Import lazily to avoid pulling the diff panel module at import time.
-        from dff.widgets.diff_panel import NARROW_PANEL_WIDTH, DiffPanel
+        from diff_tree_view.widgets.diff_panel import NARROW_PANEL_WIDTH, DiffPanel
 
         try:
             return self.app.query_one(DiffPanel).size.width >= NARROW_PANEL_WIDTH

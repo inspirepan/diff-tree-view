@@ -5,11 +5,11 @@ from pathlib import Path
 
 import typer
 
-from dff import __version__
-from dff.app import DffApp
-from dff.config import UISettings
-from dff.terminal import detect_tree_theme_name
-from dff.vcs import BackendError, DetectError, detect_backend
+from diff_tree_view import __version__
+from diff_tree_view.app import DiffTreeViewApp
+from diff_tree_view.config import UISettings
+from diff_tree_view.terminal import detect_tree_theme_name
+from diff_tree_view.vcs import BackendError, DetectError, detect_backend
 
 app = typer.Typer(
     name="dff",
@@ -40,4 +40,4 @@ def main(
         detected_theme = detect_tree_theme_name()
         if detected_theme is not None:
             ui = replace(ui, tree_theme_name=detected_theme)
-        DffApp(changes, backend=selected_backend, rev=rev, ui=ui).run()
+        DiffTreeViewApp(changes, backend=selected_backend, rev=rev, ui=ui).run()

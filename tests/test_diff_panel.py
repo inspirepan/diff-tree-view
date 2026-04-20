@@ -4,10 +4,10 @@ from pathlib import Path
 
 from textual_diff_view import DiffView
 
-from dff.app import DffApp
-from dff.models import Change, FileChange, FileSides, HunkStats
-from dff.widgets import ChangeTree, DiffPanel
-from dff.widgets.diff_panel import ExpandableEllipsis, TransparentDiffView
+from diff_tree_view.app import DiffTreeViewApp
+from diff_tree_view.models import Change, FileChange, FileSides, HunkStats
+from diff_tree_view.widgets import ChangeTree, DiffPanel
+from diff_tree_view.widgets.diff_panel import ExpandableEllipsis, TransparentDiffView
 
 
 def make_change() -> Change:
@@ -41,7 +41,7 @@ async def test_diff_panel_shows_file_and_updates_header(tmp_path: Path) -> None:
         "src/b.bin": FileSides(before="", after="", binary=True),
     }
     backend = StubBackend(tmp_path, sides)
-    app = DffApp(backend.list_changes(), backend=backend, live_watch=False)
+    app = DiffTreeViewApp(backend.list_changes(), backend=backend, live_watch=False)
 
     async with app.run_test(size=(180, 40)) as pilot:
         await pilot.pause()
@@ -70,7 +70,7 @@ async def test_diff_panel_renders_placeholder_for_binary(tmp_path: Path) -> None
         "src/b.bin": FileSides(before="", after="", binary=True),
     }
     backend = StubBackend(tmp_path, sides)
-    app = DffApp(backend.list_changes(), backend=backend, live_watch=False)
+    app = DiffTreeViewApp(backend.list_changes(), backend=backend, live_watch=False)
 
     async with app.run_test(size=(180, 40)) as pilot:
         await pilot.pause()
@@ -102,7 +102,7 @@ async def test_diff_panel_backgrounds_are_transparent_under_transparent_mode(tmp
         "src/b.bin": FileSides(before="", after="", binary=True),
     }
     backend = StubBackend(tmp_path, sides)
-    app = DffApp(backend.list_changes(), backend=backend, live_watch=False)
+    app = DiffTreeViewApp(backend.list_changes(), backend=backend, live_watch=False)
 
     async with app.run_test(size=(180, 40)) as pilot:
         await pilot.pause()
@@ -147,7 +147,7 @@ async def test_diff_panel_toggle_split_flips_diff_view_reactive(tmp_path: Path) 
         "src/b.bin": FileSides(before="", after="", binary=True),
     }
     backend = StubBackend(tmp_path, sides)
-    app = DffApp(backend.list_changes(), backend=backend, live_watch=False)
+    app = DiffTreeViewApp(backend.list_changes(), backend=backend, live_watch=False)
 
     async with app.run_test(size=(180, 40)) as pilot:
         await pilot.pause()
@@ -189,7 +189,7 @@ async def test_diff_panel_click_ellipsis_expands_hidden_lines(tmp_path: Path) ->
         "src/b.bin": FileSides(before="", after="", binary=True),
     }
     backend = StubBackend(tmp_path, sides)
-    app = DffApp(backend.list_changes(), backend=backend, live_watch=False)
+    app = DiffTreeViewApp(backend.list_changes(), backend=backend, live_watch=False)
 
     async with app.run_test(size=(180, 40)) as pilot:
         await pilot.pause()
@@ -236,7 +236,7 @@ def test_syntax_theme_drops_underline_on_function_names() -> None:
     from pygments.token import Token
     from textual.highlight import HighlightTheme
 
-    import dff.widgets.diff_panel  # noqa: F401
+    import diff_tree_view.widgets.diff_panel  # noqa: F401
 
     assert "underline" not in HighlightTheme.STYLES[Token.Name.Function]
     assert "underline" not in HighlightTheme.STYLES[Token.Name.Function.Magic]
@@ -248,7 +248,7 @@ async def test_diff_panel_has_rounded_panel_border(tmp_path: Path) -> None:
         "src/b.bin": FileSides(before="", after="", binary=True),
     }
     backend = StubBackend(tmp_path, sides)
-    app = DffApp(backend.list_changes(), backend=backend, live_watch=False)
+    app = DiffTreeViewApp(backend.list_changes(), backend=backend, live_watch=False)
 
     async with app.run_test(size=(180, 40)) as pilot:
         await pilot.pause()

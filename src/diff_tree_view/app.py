@@ -7,14 +7,14 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
 
-from dff.config import UISettings
-from dff.models import Change, FileChange, FileSides
-from dff.vcs.base import Backend
-from dff.vcs.watcher import DEFAULT_DEBOUNCE_MS, watch_repo
-from dff.widgets import ChangeTree, DiffPanel, NodeMeta, StatusBar
+from diff_tree_view.config import UISettings
+from diff_tree_view.models import Change, FileChange, FileSides
+from diff_tree_view.vcs.base import Backend
+from diff_tree_view.vcs.watcher import DEFAULT_DEBOUNCE_MS, watch_repo
+from diff_tree_view.widgets import ChangeTree, DiffPanel, NodeMeta, StatusBar
 
 
-class DffApp(App[None]):
+class DiffTreeViewApp(App[None]):
     CSS_PATH = "app.tcss"
     BINDINGS: ClassVar[list[Binding]] = [
         Binding("q", "quit", "Quit", show=False),

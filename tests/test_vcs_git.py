@@ -3,9 +3,9 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from dff.models import FileChange, FileSides, HunkStats
-from dff.vcs.base import Backend
-from dff.vcs.git import GitBackend
+from diff_tree_view.models import FileChange, FileSides, HunkStats
+from diff_tree_view.vcs.base import Backend
+from diff_tree_view.vcs.git import GitBackend
 
 
 def run(args: list[str], cwd: Path) -> None:
@@ -143,7 +143,7 @@ def test_git_backend_get_sides_detects_binary_worktree_file(tmp_path: Path) -> N
 def test_git_backend_get_sides_rejects_unknown_change(tmp_path: Path) -> None:
     root = git_repo_with_staged_and_unstaged_changes(tmp_path)
     backend = GitBackend(root)
-    from dff.models import Change
+    from diff_tree_view.models import Change
 
     stranger = Change(change_id="git-other", short_id="?", description="?")
     try:

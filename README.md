@@ -1,4 +1,4 @@
-# dff
+# diff-tree-view
 
 A terminal UI diff viewer for **jujutsu** and **git**, inspired by the VCS panel
 in VS Code. Run `dff` inside a repo and get an interactive, keyboard-driven
@@ -307,7 +307,7 @@ A fully-commented `config.example.toml` ships with the project.
 Requires Python 3.14+.
 
 ```bash
-uv tool install dff          # once published
+uv tool install diff-tree-view  # once published
 # or for development:
 uv sync
 uv run dff
@@ -337,7 +337,7 @@ Inside the TUI, press `?` for the full keymap.
 ## Architecture
 
 ```
-src/dff/
+src/diff_tree_view/
   cli.py                       Typer CLI; --backend / --rev / --version
   app.py                       Textual App; composes tree + diff + status bar
   config.py                    UISettings dataclass (TOML loader planned)

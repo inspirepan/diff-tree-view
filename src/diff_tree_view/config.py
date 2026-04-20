@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from dff.theme import BuiltinTreeThemeName, TreeThemeTokens, get_builtin_tree_theme
+from diff_tree_view.theme import BuiltinTreeThemeName, TreeThemeTokens, get_builtin_tree_theme
 
 
 class TreeDisclosureStyle(StrEnum):

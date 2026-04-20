@@ -30,9 +30,9 @@ from textual_diff_view._diff_view import (
     Ellipsis as DiffEllipsis,
 )
 
-from dff.config import UISettings
-from dff.models import Change, FileChange, FileSides
-from dff.theme import TreeThemeTokens
+from diff_tree_view.config import UISettings
+from diff_tree_view.models import Change, FileChange, FileSides
+from diff_tree_view.theme import TreeThemeTokens
 
 Opcode = tuple[str, int, int, int, int]
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
-from dff.models import Change, FileChange, FileSides
+from diff_tree_view.models import Change, FileChange, FileSides
 
 
 class BackendError(RuntimeError):

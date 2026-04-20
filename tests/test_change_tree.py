@@ -9,11 +9,11 @@ from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.widgets._tree import TreeNode
 
-from dff.app import DffApp
-from dff.config import TreeDisclosureStyle, UISettings
-from dff.models import Change, FileChange, HunkStats
-from dff.theme import DARK_SYNTAX, TreeThemeTokens
-from dff.widgets import ChangeTree
+from diff_tree_view.app import DiffTreeViewApp
+from diff_tree_view.config import TreeDisclosureStyle, UISettings
+from diff_tree_view.models import Change, FileChange, HunkStats
+from diff_tree_view.theme import DARK_SYNTAX, TreeThemeTokens
+from diff_tree_view.widgets import ChangeTree
 
 
 class TreeApp(App[None]):
@@ -107,7 +107,7 @@ async def test_change_tree_collapses_single_child_directories_when_enabled() -> 
             short_id="xmzynnxm",
             description="tidy logs",
             graph="@",
-            files=(FileChange("src/dff/widgets/change_tree.py", "M", HunkStats(12, 3)),),
+            files=(FileChange("src/diff_tree_view/widgets/change_tree.py", "M", HunkStats(12, 3)),),
         )
     ]
     app = TreeApp(changes, collapse_single_child_dirs=True)
@@ -117,7 +117,7 @@ async def test_change_tree_collapses_single_child_directories_when_enabled() -> 
         tree = app.query_one(ChangeTree)
 
         first_group = tree.root.children[0]
-        assert [plain_label(node) for node in first_group.children] == ["src/dff/widgets/"]
+        assert [plain_label(node) for node in first_group.children] == ["src/diff_tree_view/widgets/"]
         assert [plain_label(node) for node in first_group.children[0].children] == ["change_tree.py  (+12,-3)  M"]
 
 
@@ -128,7 +128,7 @@ async def test_change_tree_collapses_single_child_directories_by_default() -> No
             short_id="xmzynnxm",
             description="tidy logs",
             graph="@",
-            files=(FileChange("src/dff/widgets/change_tree.py", "M", HunkStats(12, 3)),),
+            files=(FileChange("src/diff_tree_view/widgets/change_tree.py", "M", HunkStats(12, 3)),),
         )
     ]
     app = TreeApp(changes)
@@ -138,7 +138,7 @@ async def test_change_tree_collapses_single_child_directories_by_default() -> No
         tree = app.query_one(ChangeTree)
 
         first_group = tree.root.children[0]
-        assert [plain_label(node) for node in first_group.children] == ["src/dff/widgets/"]
+        assert [plain_label(node) for node in first_group.children] == ["src/diff_tree_view/widgets/"]
 
 
 async def test_change_tree_dims_ignored_files_and_marks_conflicts() -> None:
@@ -245,7 +245,7 @@ async def test_change_tree_right_aligns_status_and_stats() -> None:
 
 
 async def test_change_tree_has_rounded_panel_border() -> None:
-    app = DffApp(sample_changes())
+    app = DiffTreeViewApp(sample_changes())
 
     async with app.run_test() as pilot:
         await pilot.pause()
@@ -356,7 +356,7 @@ async def test_change_tree_ignores_mouse_hover() -> None:
 
 
 async def test_change_tree_cursor_row_uses_background_without_overriding_token_colors() -> None:
-    app = DffApp(sample_changes())
+    app = DiffTreeViewApp(sample_changes())
 
     async with app.run_test(size=(180, 40)) as pilot:
         await pilot.pause()

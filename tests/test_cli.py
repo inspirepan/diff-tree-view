@@ -4,12 +4,12 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from dff import __version__
-from dff.app import DffApp
-from dff.cli import app
-from dff.config import UISettings
-from dff.models import Change, FileChange, HunkStats
-from dff.theme import BuiltinTreeThemeName
+from diff_tree_view import __version__
+from diff_tree_view.app import DiffTreeViewApp
+from diff_tree_view.cli import app
+from diff_tree_view.config import UISettings
+from diff_tree_view.models import Change, FileChange, HunkStats
+from diff_tree_view.theme import BuiltinTreeThemeName
 
 
 class FakeBackend:
@@ -44,11 +44,11 @@ def test_no_args_launches_tree_app(monkeypatch) -> None:
         backend.preferred = preferred
         return backend
 
-    def fake_run(self: DffApp) -> None:
+    def fake_run(self: DiffTreeViewApp) -> None:
         launched["changes"] = self.changes
 
-    monkeypatch.setattr("dff.cli.detect_backend", fake_detect_backend)
-    monkeypatch.setattr(DffApp, "run", fake_run)
+    monkeypatch.setattr("diff_tree_view.cli.detect_backend", fake_detect_backend)
+    monkeypatch.setattr(DiffTreeViewApp, "run", fake_run)
 
     result = CliRunner().invoke(app, [])
 
@@ -68,16 +68,16 @@ def test_cli_applies_detected_light_theme(monkeypatch) -> None:
     def fake_detect_theme() -> BuiltinTreeThemeName:
         return BuiltinTreeThemeName.LIGHT
 
-    original_init = DffApp.__init__
+    original_init = DiffTreeViewApp.__init__
 
     def capturing_init(self, *args, **kwargs):
         captured["ui"] = kwargs.get("ui")
         original_init(self, *args, **kwargs)
 
-    monkeypatch.setattr("dff.cli.detect_backend", fake_detect_backend)
-    monkeypatch.setattr("dff.cli.detect_tree_theme_name", fake_detect_theme)
-    monkeypatch.setattr(DffApp, "__init__", capturing_init)
-    monkeypatch.setattr(DffApp, "run", lambda self: None)
+    monkeypatch.setattr("diff_tree_view.cli.detect_backend", fake_detect_backend)
+    monkeypatch.setattr("diff_tree_view.cli.detect_tree_theme_name", fake_detect_theme)
+    monkeypatch.setattr(DiffTreeViewApp, "__init__", capturing_init)
+    monkeypatch.setattr(DiffTreeViewApp, "run", lambda self: None)
 
     result = CliRunner().invoke(app, [])
 
@@ -91,17 +91,17 @@ def test_cli_leaves_default_theme_when_detection_fails(monkeypatch) -> None:
     backend = FakeBackend()
     captured: dict[str, object] = {}
 
-    monkeypatch.setattr("dff.cli.detect_backend", lambda cwd, preferred=None: backend)
-    monkeypatch.setattr("dff.cli.detect_tree_theme_name", lambda: None)
+    monkeypatch.setattr("diff_tree_view.cli.detect_backend", lambda cwd, preferred=None: backend)
+    monkeypatch.setattr("diff_tree_view.cli.detect_tree_theme_name", lambda: None)
 
-    original_init = DffApp.__init__
+    original_init = DiffTreeViewApp.__init__
 
     def capturing_init(self, *args, **kwargs):
         captured["ui"] = kwargs.get("ui")
         original_init(self, *args, **kwargs)
 
-    monkeypatch.setattr(DffApp, "__init__", capturing_init)
-    monkeypatch.setattr(DffApp, "run", lambda self: None)
+    monkeypatch.setattr(DiffTreeViewApp, "__init__", capturing_init)
+    monkeypatch.setattr(DiffTreeViewApp, "run", lambda self: None)
 
     result = CliRunner().invoke(app, [])
 
@@ -118,8 +118,8 @@ def test_cli_forwards_backend_override_and_rev(monkeypatch) -> None:
         backend.preferred = preferred
         return backend
 
-    monkeypatch.setattr("dff.cli.detect_backend", fake_detect_backend)
-    monkeypatch.setattr(DffApp, "run", lambda self: None)
+    monkeypatch.setattr("diff_tree_view.cli.detect_backend", fake_detect_backend)
+    monkeypatch.setattr(DiffTreeViewApp, "run", lambda self: None)
 
     result = CliRunner().invoke(app, ["--backend", "git", "--rev", "@"])
 

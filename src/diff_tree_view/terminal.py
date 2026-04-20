@@ -18,7 +18,7 @@ import time
 import tty
 from typing import BinaryIO, Final
 
-from dff.theme import BuiltinTreeThemeName
+from diff_tree_view.theme import BuiltinTreeThemeName
 
 ST: Final[bytes] = b"\x1b\\"
 BEL: Final[int] = 7
