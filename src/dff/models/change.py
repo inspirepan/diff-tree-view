@@ -28,6 +28,13 @@ class FileChange:
 
 
 @dataclass(frozen=True, slots=True)
+class FileSides:
+    before: str = ""
+    after: str = ""
+    binary: bool = False
+
+
+@dataclass(frozen=True, slots=True)
 class Change:
     change_id: str
     short_id: str

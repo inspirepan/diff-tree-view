@@ -21,15 +21,30 @@ class StatusBar(Static):
         super().__init__(id=id)
         self._ui = ui or UISettings()
 
+    def _split_supported(self) -> bool:
+        # Import lazily to avoid pulling the diff panel module at import time.
+        from dff.widgets.diff_panel import NARROW_PANEL_WIDTH, DiffPanel
+
+        try:
+            return self.app.query_one(DiffPanel).size.width >= NARROW_PANEL_WIDTH
+        except Exception:
+            return True
+
     def render(self) -> Text:
         text = Text()
         key_style, label_style, separator_style = _hint_palette(self._ui)
-        hints = [
+        hints: list[tuple[str, str, str, str]] = [
             ("↑/k", key_style, " up", label_style),
             ("↓/j", key_style, " down", label_style),
             ("enter/space", key_style, " toggle", label_style),
-            ("q", key_style, " quit", label_style),
         ]
+        # `m` forces split view — useless when the diff panel is narrow enough
+        # that split auto-degrades to unified. Hide the hint so it doesn't
+        # mislead the user.
+        if self._split_supported():
+            hints.append(("m", key_style, " split", label_style))
+        hints.append(("z", key_style, " wrap", label_style))
+        hints.append(("q", key_style, " quit", label_style))
         text.append(" ")
         for index, (keys, key_style, label, label_style) in enumerate(hints):
             text.append(keys, style=key_style)

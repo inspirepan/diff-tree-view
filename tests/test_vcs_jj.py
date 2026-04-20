@@ -3,7 +3,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from dff.models import HunkStats
+from dff.models import FileSides, HunkStats
 from dff.vcs.base import Backend
 from dff.vcs.jj import JjBackend
 
@@ -56,3 +56,41 @@ def test_jj_backend_defaults_to_current_revset(tmp_path: Path) -> None:
 
     assert changes
     assert changes[0].files
+
+
+def test_jj_backend_get_sides_returns_parent_and_current(tmp_path: Path) -> None:
+    root = jj_repo_with_feature_change(tmp_path)
+    backend = JjBackend(root)
+    changes = backend.list_changes(rev="@")
+    feature = changes[0]
+    files = {f.path: f for f in feature.files}
+
+    modified = backend.get_sides(feature, files["base.txt"])
+    assert modified.before == "base\n"
+    assert modified.after == "base\nfeature\n"
+    assert not modified.binary
+
+    added = backend.get_sides(feature, files["added.txt"])
+    assert added.before == ""
+    assert added.after == "added\n"
+    assert not added.binary
+
+
+def test_jj_backend_get_sides_flags_binary(tmp_path: Path) -> None:
+    run(["jj", "git", "init", "."], tmp_path)
+    (tmp_path / "seed.txt").write_text("seed\n")
+    run(["jj", "file", "track", "seed.txt"], tmp_path)
+    run(["jj", "describe", "-m", "base"], tmp_path)
+    run(["jj", "bookmark", "create", "trunk", "-r", "@"], tmp_path)
+    run(["jj", "new", "trunk"], tmp_path)
+    (tmp_path / "blob.bin").write_bytes(b"\x00\x01\x02\x03")
+    run(["jj", "file", "track", "blob.bin"], tmp_path)
+    run(["jj", "describe", "-m", "binary"], tmp_path)
+
+    backend = JjBackend(tmp_path)
+    changes = backend.list_changes(rev="@")
+    feature = changes[0]
+    blob = next(f for f in feature.files if f.path == "blob.bin")
+
+    sides = backend.get_sides(feature, blob)
+    assert sides == FileSides(before="", after="", binary=True)

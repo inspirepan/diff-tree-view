@@ -4,7 +4,7 @@ import asyncio
 from pathlib import Path
 
 from dff.app import DffApp
-from dff.models import Change, FileChange, HunkStats
+from dff.models import Change, FileChange, FileSides, HunkStats
 from dff.vcs.base import Backend
 from dff.vcs.watcher import watch_repo
 from dff.widgets import ChangeTree
@@ -34,6 +34,9 @@ class StubBackend:
         index = min(self.calls, len(self._batches) - 1)
         self.calls += 1
         return self._batches[index]
+
+    def get_sides(self, change: Change, file: FileChange) -> FileSides:
+        return FileSides(before="", after="")
 
 
 async def test_watch_repo_debounces_bursts(tmp_path: Path) -> None:

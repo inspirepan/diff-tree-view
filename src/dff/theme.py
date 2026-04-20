@@ -22,6 +22,19 @@ class TreeThemeTokens:
     change_id: str
     change_description: str
     cursor_background: str
+    # Diff-body palette (klaude-code dark/light). fg is the text color on the
+    # corresponding bg; char_bg is the stronger shade used for line-number
+    # gutters and intra-line char highlights.
+    diff_add_bg: str
+    diff_add_char_bg: str
+    diff_add_text: str
+    diff_remove_bg: str
+    diff_remove_char_bg: str
+    diff_remove_text: str
+    # Background highlight for the change-group rows in ChangeTree. Borrowed
+    # from klaude-code's `blue_sub_background` — faint blue that distinguishes
+    # group headers from the file rows beneath them.
+    change_row_bg: str
 
 
 class BuiltinTreeThemeName(StrEnum):
@@ -46,6 +59,13 @@ DARK_TREE_TOKENS = TreeThemeTokens(
     change_id="#ffffff",
     change_description="#99aabb",
     cursor_background="#343a44",
+    diff_add_bg="#2b4938",
+    diff_add_char_bg="#3d7b52",
+    diff_add_text="#c8e6c9",
+    diff_remove_bg="#4d2f33",
+    diff_remove_char_bg="#8a4a52",
+    diff_remove_text="#ffcdd2",
+    change_row_bg="#2c3846",
 )
 
 
@@ -66,6 +86,13 @@ LIGHT_TREE_TOKENS = TreeThemeTokens(
     change_id="#101827",
     change_description="#667e90",
     cursor_background="#f0f1f7",
+    diff_add_bg="#dafbe1",
+    diff_add_char_bg="#aceebb",
+    diff_add_text="#2e5a32",
+    diff_remove_bg="#ffecec",
+    diff_remove_char_bg="#ffcfcf",
+    diff_remove_text="#82071e",
+    change_row_bg="#ecf1f9",
 )
 
 

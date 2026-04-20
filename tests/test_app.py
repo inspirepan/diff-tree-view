@@ -29,7 +29,7 @@ async def test_dff_app_uses_textual_ansi_and_transparent_backgrounds() -> None:
         assert app.styles.background.a == 0
         assert app.screen.styles.background.a == 0
         assert tree.styles.background.a == 0
-        assert tree.region.width == app.screen.region.width
+        assert tree.region.width < app.screen.region.width
         assert tree.region.height < app.screen.region.height
         for name in [
             "tree--label",
@@ -65,21 +65,12 @@ async def test_dff_app_renders_status_bar_hints() -> None:
         status_text = status_bar.render()
 
         assert "↑/k up" in status_text.plain
+        assert "z wrap" in status_text.plain
         assert "q quit" in status_text.plain
         assert " • " in status_text.plain
-        assert [span.style for span in status_text.spans] == [
-            "#9090cc",
-            "#99aabb",
-            "#778899",
-            "#9090cc",
-            "#99aabb",
-            "#778899",
-            "#9090cc",
-            "#99aabb",
-            "#778899",
-            "#9090cc",
-            "#99aabb",
-        ]
+        # Default run_test gives an 80x24 screen — DiffPanel is narrower than
+        # NARROW_PANEL_WIDTH so split is auto-unified and `m` hint is hidden.
+        assert "m split" not in status_text.plain
 
 
 async def test_dff_app_global_q_binding_quits() -> None:

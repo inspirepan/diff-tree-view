@@ -1,7 +1,11 @@
 * {
-    scrollbar-background: transparent;
-    scrollbar-background-hover: transparent;
-    scrollbar-background-active: transparent;
+    /* `transparent` here would resolve to rgba(0,0,0,0) and Rich flattens
+       that to solid RGB(0,0,0), leaving a black track behind the thumb.
+       `ansi_default` renders as [49m so the terminal background bleeds
+       through for real. */
+    scrollbar-background: ansi_default;
+    scrollbar-background-hover: ansi_default;
+    scrollbar-background-active: ansi_default;
 }
 
 App.-transparent {
@@ -34,13 +38,70 @@ App.-opaque Screen {
     background: transparent;
 }
 
-ChangeTree {
+#panes {
     width: 100%;
     height: 1fr;
+    background: transparent;
+}
+
+ChangeTree {
+    width: 38%;
+    min-width: 30;
+    height: 100%;
     border: none;
     color: ansi_default;
+    /* Long change descriptions get truncated with `…` in `_render_line` so
+       they never need horizontal scroll — pin overflow-x off to make that
+       contract explicit and reclaim the bottom row that the thumb occupied. */
+    overflow-x: hidden;
+    scrollbar-size-vertical: 1;
+}
+
+DiffPanel {
+    width: 1fr;
+    height: 100%;
+    background: transparent;
+}
+
+App.-opaque DiffPanel {
+    background: $surface;
+}
+
+DiffHeader {
+    height: 1;
+    width: 100%;
+    background: transparent;
+    padding: 0 1;
+}
+
+#diff-body {
+    width: 100%;
+    height: 1fr;
+    background: transparent;
     scrollbar-size-vertical: 1;
     scrollbar-size-horizontal: 1;
+}
+
+.diff-placeholder {
+    padding: 1 2;
+    color: $foreground 60%;
+}
+
+App.-transparent DiffPanel,
+App.-transparent DiffView,
+App.-transparent DiffView .diff-group,
+App.-transparent DiffView .title,
+App.-transparent DiffView Ellipsis,
+App.-transparent #diff-body {
+    background: ansi_default;
+}
+
+App.-opaque DiffPanel,
+App.-opaque DiffView,
+App.-opaque DiffView .diff-group,
+App.-opaque DiffView .title,
+App.-opaque #diff-body {
+    background: $surface;
 }
 
 App.-transparent ChangeTree {

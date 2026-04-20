@@ -39,9 +39,9 @@ uv run pytest -m smoke              # CI-only tmux smoke layer
 - [x] File status parses to `M` / `A` / `D` / `R` correctly (incl. renames
       with similarity score).
 - [x] `+N -N` stats match `git diff --numstat`.
-- [ ] `get_sides(path)` returns `(HEAD_content, index_content)` for staged
+- [x] `get_sides(path)` returns `(HEAD_content, index_content)` for staged
       and `(index_content, worktree_content)` for unstaged.
-- [ ] Binary files flagged and skipped from diff rendering.
+- [x] Binary files flagged and skipped from diff rendering.
 - [ ] Detached HEAD / empty repo / initial commit edge cases don't crash.
 - [ ] Conflict detection via `git ls-files -u` returns the unmerged set.
 - [ ] `get_conflict_sides(path)` returns `{base, ours, theirs}` from
@@ -50,14 +50,14 @@ uv run pytest -m smoke              # CI-only tmux smoke layer
 ### 1.3 jj backend (`vcs/jj.py`)
 
 - [x] `list_changes()` returns the requested revset's file groups for the tree.
-- [ ] `list_changes()` uses the configured revset (default `trunk()..@`).
+- [x] `list_changes()` uses the configured revset (default `trunk()..@`).
 - [ ] Revset fallback to `@-::@` when `trunk()` is unconfigured.
 - [ ] `--rev` CLI flag overrides config.
-- [ ] All commands pass `--ignore-working-copy`.
+- [x] All commands pass `--ignore-working-copy`.
 - [ ] Each change exposes `change_id`, `short_id`, `description`,
       `author`, `timestamp`.
-- [ ] `list_files(change_id)` parses `--summary` into `M/A/D/R` + stats.
-- [ ] `get_sides(change_id, path)` uses `jj file show -r <id>-` and
+- [x] `list_files(change_id)` parses `--summary` into `M/A/D/R` + stats.
+- [x] `get_sides(change_id, path)` uses `jj file show -r <id>-` and
       `-r <id>` for before/after.
 - [ ] Root `change_id` = `zzzzzzzz` is handled (no parent).
 - [ ] Empty description rendered as `(no description set)`.
@@ -139,13 +139,15 @@ uv run pytest -m smoke              # CI-only tmux smoke layer
 
 ### 4.2 Diff panel (`widgets/diff_panel.py`)
 
-- [ ] Mounts `CollapsibleDiffView` with correct `before` / `after`.
-- [ ] Header pill shows `<path>  <status>  +N -N` and mode pill.
-- [ ] `m` toggles `split` ↔ `unified`.
-- [ ] `w` toggles word wrap; preserves scroll position.
+- [x] Mounts `DiffView` with correct `before` / `after`.
+- [x] Header pill shows `<path>  <status>  +N -N` and mode pill.
+- [x] `m` toggles `split` ↔ `unified`.
+- [x] `w` toggles word wrap; preserves scroll position.
 - [ ] Language auto-detected from filename for syntax highlighting.
 - [ ] Large file (> `performance.max_file_lines`) falls back to plain
       text with a notice pill.
+- [x] DiffPanel and nested DiffView / .diff-group / VerticalScroll
+      render with transparent backgrounds under `-transparent` mode.
 
 ### 4.3 Collapsible diff (`widgets/collapsible_diff.py`)
 

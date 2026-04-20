@@ -29,6 +29,12 @@ class DirectoryEntry:
 class NodeMeta:
     left: Text
     right: Text | None = None
+    change: Change | None = None
+    file: FileChange | None = None
+    # Spacer rows are non-selectable blank lines inserted between change
+    # groups to give them visual breathing room. `_render_line` returns a
+    # blank strip for them and cursor movement skips over them.
+    is_spacer: bool = False
 
 
 class ChangeTree(Tree[NodeMeta]):
@@ -63,11 +69,10 @@ class ChangeTree(Tree[NodeMeta]):
         self._build_tree()
 
     def on_mount(self) -> None:
-        guides_color = self._tree_theme.guides
-        self.styles.border_right = ("vkey", guides_color)
-        self.styles.scrollbar_color = guides_color
-        self.styles.scrollbar_color_hover = guides_color
-        self.styles.scrollbar_color_active = guides_color
+        scrollbar_color = self._tree_theme.directory
+        self.styles.scrollbar_color = scrollbar_color
+        self.styles.scrollbar_color_hover = scrollbar_color
+        self.styles.scrollbar_color_active = scrollbar_color
         if self.root.children:
             self.move_cursor(self.root.children[0])
 
@@ -84,17 +89,44 @@ class ChangeTree(Tree[NodeMeta]):
         group_node = self._current_group_node()
         if group_node is None:
             return
-        group_index = self.root.children.index(group_node)
-        if group_index < len(self.root.children) - 1:
-            self.move_cursor(self.root.children[group_index + 1])
+        groups = self._change_group_nodes()
+        index = groups.index(group_node)
+        if index < len(groups) - 1:
+            self.move_cursor(groups[index + 1])
 
     def action_previous_group(self) -> None:
         group_node = self._current_group_node()
         if group_node is None:
             return
-        group_index = self.root.children.index(group_node)
-        if group_index > 0:
-            self.move_cursor(self.root.children[group_index - 1])
+        groups = self._change_group_nodes()
+        index = groups.index(group_node)
+        if index > 0:
+            self.move_cursor(groups[index - 1])
+
+    def action_cursor_down(self) -> None:
+        target = self.cursor_line + 1
+        while target < len(self._tree_lines) and self._line_is_spacer(target):
+            target += 1
+        if target < len(self._tree_lines):
+            self.cursor_line = target
+
+    def action_cursor_up(self) -> None:
+        target = self.cursor_line - 1
+        while target >= 0 and self._line_is_spacer(target):
+            target -= 1
+        if target >= 0:
+            self.cursor_line = target
+
+    def _line_is_spacer(self, y: int) -> bool:
+        if y < 0 or y >= len(self._tree_lines):
+            return False
+        node = self._tree_lines[y].path[-1]
+        return isinstance(node.data, NodeMeta) and node.data.is_spacer
+
+    def _change_group_nodes(self) -> list[TreeNode[NodeMeta]]:
+        return [
+            child for child in self.root.children if not (isinstance(child.data, NodeMeta) and child.data.is_spacer)
+        ]
 
     def _on_mouse_move(self, event: events.MouseMove) -> None:
         event.stop()
@@ -146,6 +178,11 @@ class ChangeTree(Tree[NodeMeta]):
             return Strip.blank(width, base_style)
 
         line = tree_lines[y]
+        row_node = line.path[-1]
+        row_data = row_node.data
+        if isinstance(row_data, NodeMeta) and row_data.is_spacer:
+            return Strip.blank(width, base_style)
+
         is_hover = self.hover_line >= 0 and any(node._hover for node in line.path)
 
         base_hidden = self.get_component_styles("tree--guides").color.a == 0
@@ -161,6 +198,12 @@ class ChangeTree(Tree[NodeMeta]):
 
         line_style = self.get_component_rich_style("tree--highlight-line") if is_hover else base_style
         line_style += Style(meta={"line": y})
+        # Change-group rows (direct children of the hidden root) get tinted
+        # with the theme's blue-ish accent so they stand out from the
+        # directory / file rows nested below.
+        row_node = line.path[-1]
+        if row_node.parent is self.root:
+            line_style += Style(bgcolor=Color.parse(self._tree_theme.change_row_bg))
 
         guides = Text(style=line_style)
         guide_style = base_guide_style
@@ -207,19 +250,27 @@ class ChangeTree(Tree[NodeMeta]):
             right_text.stylize(label_style)
             right_text.stylize(Style(meta={"node": node._id}))
 
+        # `trailing` keeps the status letter two columns off the scrollbar
+        # (tests enforce that); `min_gap` shrinks to 1 so short file names on
+        # a narrow tree don't collapse into ellipses just to keep a spacer.
+        trailing = 2
+        min_gap = 1
         if right_text is not None:
-            left_w = left_text.cell_len
-            right_w = right_text.cell_len
-            # Reserve two trailing columns before the scrollbar / vkey border
-            # so the right content doesn't sit flush against the scrollbar.
-            trailing = 2
-            gap = max(width - left_w - right_w - trailing, 2)
+            available_for_left = max(0, width - right_text.cell_len - trailing - min_gap)
+            if left_text.cell_len > available_for_left:
+                left_text = left_text.copy()
+                left_text.truncate(max(1, available_for_left), overflow="ellipsis")
+            gap = max(width - left_text.cell_len - right_text.cell_len - trailing, min_gap)
             composite = Text(style=line_style)
             composite.append(left_text)
             composite.append(" " * gap, style=line_style)
             composite.append(right_text)
             composite.append(" " * trailing, style=line_style)
         else:
+            available = max(1, width - trailing)
+            if left_text.cell_len > available:
+                left_text = left_text.copy()
+                left_text.truncate(available, overflow="ellipsis")
             composite = left_text
 
         segments = list(composite.render(self.app.console))
@@ -242,12 +293,22 @@ class ChangeTree(Tree[NodeMeta]):
         return None
 
     def _build_tree(self) -> None:
-        for change in self._changes:
+        for index, change in enumerate(self._changes):
+            if index > 0:
+                # Blank spacer row between change groups so `[-] @ rwrslwnpmsxw …`
+                # headers have visual breathing room. Rendered as a blank strip
+                # in `_render_line`; cursor navigation skips over it.
+                spacer = self.root.add(
+                    "",
+                    data=NodeMeta(left=Text(""), right=None, is_spacer=True),
+                    expand=False,
+                )
+                spacer.allow_expand = False
             left, right = self._format_change_node(change)
             label = self._combine_label(left, right)
-            group_node = self.root.add(label, data=NodeMeta(left=left, right=right), expand=True)
+            group_node = self.root.add(label, data=NodeMeta(left=left, right=right, change=change), expand=True)
             directory_root = self._build_directory_tree(change.files)
-            self._add_directory_children(group_node, directory_root)
+            self._add_directory_children(group_node, directory_root, change=change)
 
     def reload_changes(self, changes: Sequence[Change]) -> None:
         """Rebuild the tree from a fresh set of changes, preserving cursor path."""
@@ -362,18 +423,18 @@ class ChangeTree(Tree[NodeMeta]):
             current.files.append(file_change)
         return root
 
-    def _add_directory_children(self, parent: TreeNode[NodeMeta], entry: DirectoryEntry) -> None:
+    def _add_directory_children(self, parent: TreeNode[NodeMeta], entry: DirectoryEntry, *, change: Change) -> None:
         for directory_name in sorted(entry.directories):
             directory_entry = entry.directories[directory_name]
             name, collapsed_entry = self._collapse_directory(directory_name, directory_entry)
             left, right = self._format_directory_node(name)
             label = self._combine_label(left, right)
-            directory_node = parent.add(label, data=NodeMeta(left=left, right=right), expand=True)
-            self._add_directory_children(directory_node, collapsed_entry)
+            directory_node = parent.add(label, data=NodeMeta(left=left, right=right, change=change), expand=True)
+            self._add_directory_children(directory_node, collapsed_entry, change=change)
         for file_change in sorted(entry.files, key=lambda item: PurePosixPath(item.path).name):
             left, right = self._format_file_node(file_change)
             label = self._combine_label(left, right)
-            parent.add_leaf(label, data=NodeMeta(left=left, right=right))
+            parent.add_leaf(label, data=NodeMeta(left=left, right=right, change=change, file=file_change))
 
     def _collapse_directory(self, name: str, entry: DirectoryEntry) -> tuple[str, DirectoryEntry]:
         if not self._collapse_single_child_dirs:
@@ -403,7 +464,7 @@ class ChangeTree(Tree[NodeMeta]):
         return Text(f"{label}/", style=self._tree_theme.directory), None
 
     def _format_file_node(self, file_change: FileChange) -> tuple[Text, Text | None]:
-        left = Text(PurePosixPath(file_change.path).name, style=self._tree_theme.file)
+        left = Text(PurePosixPath(file_change.path).name, style=self._file_name_style(file_change.status))
         if file_change.ignored:
             left.stylize("dim")
 
@@ -463,3 +524,13 @@ class ChangeTree(Tree[NodeMeta]):
             "R": self._tree_theme.status_renamed,
             "M": self._tree_theme.status_modified,
         }.get(status, "default")
+
+    def _file_name_style(self, status: str) -> str:
+        # A=green, M=yellow, D=red, R=yellow. Falls back to the neutral file
+        # color for statuses we don't categorize (mirrors git/jj's short codes).
+        return {
+            "A": self._tree_theme.status_added,
+            "D": self._tree_theme.status_deleted,
+            "M": self._tree_theme.change_graph_current,
+            "R": self._tree_theme.status_renamed,
+        }.get(status, self._tree_theme.file)

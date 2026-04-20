@@ -313,7 +313,9 @@ uv sync
 uv run dff
 ```
 
-Runtime deps: `textual`, `textual-diff-view`, `watchfiles`, `pyperclip`.
+Runtime deps: `textual`, `textual-diff-view`, `watchfiles`, `typer`.
+`pyperclip` is declared but not wired up yet (reserved for the v0.2
+comment export flow).
 
 ---
 
@@ -336,41 +338,42 @@ Inside the TUI, press `?` for the full keymap.
 
 ```
 src/dff/
-  cli.py                       CLI entry; arg parsing; backend detect
-  app.py                       Textual App; composes tree/diff/comment bar
-  layout.py                    Responsive breakpoint logic
-  config.py                    TOML loader + dataclasses
+  cli.py                       Typer CLI; --backend / --rev / --version
+  app.py                       Textual App; composes tree + diff + status bar
+  config.py                    UISettings dataclass (TOML loader planned)
+  theme.py                     TreeThemeTokens + built-in DARK / LIGHT palettes
+  terminal.py                  OSC-11 background probe → auto dark / light
 
   vcs/
-    base.py                    Protocol: Backend / Change / FileChange
-    detect.py                  Picks jj vs git
+    base.py                    Protocol: Backend, BackendError
+    detect.py                  Picks jj vs git; walks up to repo root
     jj.py                      subprocess: jj log / diff --summary / file show
     git.py                     subprocess: git diff --name-status / show
-    watcher.py                 watchfiles-based async watcher; debounced
-                               events fed to App.refresh_from_vcs()
+    watcher.py                 watchfiles-based async iterator;
+                               debounced events drive App._refresh_changes()
 
   widgets/
     change_tree.py             Tree widget with VS Code-style grouping
-    diff_panel.py              Wraps CollapsibleDiffView + header
-    collapsible_diff.py        Extends DiffView with fold/expand
-    line_selection.py          Mouse + keyboard line selection
-    comment_bar.py             Bottom input + comment list + copy
-    status_bar.py
+    diff_panel.py              Header + TransparentDiffView (subclass of
+                               textual-diff-view that blanks the split-mode
+                               hatch and pulls colors from TreeThemeTokens)
+    status_bar.py              Single-line hint bar (• separators)
 
   app.tcss                     Global stylesheet. Rules:
-                               * {border: none} everywhere; transparent
-                               backgrounds on Screen + containers;
-                               `.pill` / `.pill.-accent` / `.pill.-dim`
-                               for reverse-color labels; `$surface` only
-                               on overlays (help, confirms, popups).
+                               * { scrollbar-background: ansi_default } so the
+                               terminal backdrop shows through scrollbar
+                               tracks; App.-transparent / App.-opaque toggle
+                               the Screen + panel backgrounds; all tree cursor
+                               / guide / highlight classes are flattened to
+                               `transparent` + `text-style: none`.
 
   models/
-    change.py                  Change, FileChange, HunkStats
-    comment.py                 Comment(file, side, line_range, body,
-                               content_hash), CommentStore + re-anchor
-
-  prompt.py                    CommentStore -> markdown prompt
+    change.py                  Change, FileChange, FileSides, HunkStats
 ```
+
+Planned but not yet implemented: `layout.py` (responsive breakpoints),
+`widgets/collapsible_diff.py`, `widgets/line_selection.py`,
+`widgets/comment_bar.py`, `models/comment.py`, `prompt.py`.
 
 ### Transparent background — how it works
 
@@ -379,18 +382,25 @@ Three pieces, combined:
 1. **Theme** — `App.theme = "textual-ansi"` in `app.py`. ANSI theme keeps
    palette decisions on the terminal side instead of forcing a light/dark
    surface.
-2. **Global TCSS** — in `app.tcss`, `Screen` and every layout container
-   (`#tree-panel`, `#diff-panel`, `#comment-bar`, `#status-bar`, etc.) are
-   declared `background: transparent`. Inner rich widgets
-   (`MarkdownFence`, tables, scrollbars track) are also transparent so they
-   don't repaint their own backdrop.
-3. **Overlays stay opaque** — help, comment-list popup, confirm dialogs use
-   `background: $surface` so they read as real floating panels.
+2. **Global TCSS** — `app.tcss` toggles between `App.-transparent` and
+   `App.-opaque` based on `UISettings.transparent_background`. In
+   transparent mode, `Screen`, `#app-shell`, `#panes`, `#diff-body`,
+   `ChangeTree`, `DiffPanel`, `DiffHeader`, and `#status-bar` are all set
+   to `background: transparent`; the diff surface explicitly uses
+   `ansi_default` so Rich emits `[49m` instead of flattening
+   `rgba(0,0,0,0)` to solid black. All scrollbar tracks use
+   `scrollbar-background: ansi_default` for the same reason.
+3. **Tree cursor & guides** — `.tree--cursor`, `.tree--guides-*`, and the
+   hover/highlight classes are flattened to `background: transparent`
+   with `text-style: none`, so Textual's default theme-colored hover /
+   selection rectangles never paint over the terminal wallpaper.
 
-`DiffView`'s `.diff-group` has a faint `$foreground 4%` tint that **survives
-through transparency** — it shows as a subtle wash over the terminal
-background, which is what we want. Added / removed lines keep their
-`$success 10% / $error 10%` overlays as designed.
+`TransparentDiffView` further substitutes the diagonal-hatch "missing
+line" marker with blank space and pulls diff-add / diff-remove background
+shades (`diff_add_bg` / `diff_remove_bg` / `diff_add_char_bg` /
+`diff_remove_char_bg`) from the active `TreeThemeTokens`. Those tokens
+ship in two built-in palettes (`DARK` / `LIGHT`) and are picked
+automatically via `terminal.detect_tree_theme_name()` (OSC-11 query).
 
 ### VCS command cheatsheet
 
@@ -416,14 +426,14 @@ background, which is what we want. Added / removed lines keep their
 
 ### v0.1 — MVP
 
-- [ ] Project scaffold (uv, Textual app skeleton, CLI)
-- [ ] VCS backend abstraction + auto-detect
-- [ ] jj backend (read-only)
-- [ ] git backend (read-only)
-- [ ] Change tree widget with stats and M/A/D/R
-- [ ] Integrate `textual-diff-view` (split + unified, wrap toggle)
+- [x] Project scaffold (uv, Textual app skeleton, CLI)
+- [x] VCS backend abstraction + auto-detect
+- [x] jj backend (read-only)
+- [x] git backend (read-only)
+- [x] Change tree widget with stats and M/A/D/R
+- [x] Integrate `textual-diff-view` (split + unified, wrap toggle)
 - [ ] Responsive layout (split / unified / tabs)
-- [ ] File watcher (`watchfiles`) auto-refresh for tree + diff
+- [x] File watcher (`watchfiles`) auto-refresh for tree + diff
 - [ ] Minimal config: `[ui]`, `[vcs.jj.revset]`, `[vcs.watch]`, `[keys]`, `[comment.clipboard]`
 
 ### v0.2 — Review workflow

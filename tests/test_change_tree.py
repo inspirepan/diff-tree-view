@@ -82,7 +82,12 @@ async def test_change_tree_renders_groups_directories_and_stats() -> None:
         await pilot.pause()
         tree = app.query_one(ChangeTree)
 
-        assert [plain_label(node) for node in tree.root.children] == [
+        # `root.children` now also includes blank spacer rows between change
+        # groups. Filter them out to assert on the real change labels.
+        group_labels = [
+            plain_label(node) for node in tree.root.children if node.data is not None and not node.data.is_spacer
+        ]
+        assert group_labels == [
             "@  xmzynnxm  tidy logs  (+42,-5)",
             "○  4f2c6a  refactor parser  (+258,-97)",
         ]
@@ -239,14 +244,15 @@ async def test_change_tree_right_aligns_status_and_stats() -> None:
         assert "(+12,-3)  M  " in row
 
 
-async def test_change_tree_has_right_border() -> None:
+async def test_change_tree_has_no_right_border() -> None:
     app = DffApp(sample_changes())
 
     async with app.run_test() as pilot:
         await pilot.pause()
         tree = app.query_one(ChangeTree)
 
-        assert tree.styles.border_right[0] == "vkey"
+        # Right border removed — the blue scrollbar provides the separator now.
+        assert tree.styles.border_right[0] == ""
 
 
 async def test_change_tree_uses_bracket_disclosure_markers() -> None:
@@ -283,6 +289,13 @@ async def test_change_tree_applies_custom_tokens_and_non_compact_guides() -> Non
         change_id="cyan",
         change_description="yellow",
         cursor_background="#222222",
+        diff_add_bg="#2b4938",
+        diff_add_char_bg="#3d7b52",
+        diff_add_text="#c8e6c9",
+        diff_remove_bg="#4d2f33",
+        diff_remove_char_bg="#8a4a52",
+        diff_remove_text="#ffcdd2",
+        change_row_bg="#2c3846",
     )
     app = TreeApp(
         sample_changes(),
@@ -312,7 +325,8 @@ async def test_change_tree_applies_custom_tokens_and_non_compact_guides() -> Non
         assert directory_label.style == "yellow"
 
         file_label = rich_label(tree.root.children[0].children[0].children[0])
-        assert file_label.style == "white"
+        # File name is now colored by status. src/app.py is "M" → change_graph_current.
+        assert file_label.style == "magenta"
         span_styles = {span.style for span in file_label.spans}
         assert "blue" in span_styles
         assert "bright_green" in span_styles
@@ -336,7 +350,7 @@ async def test_change_tree_ignores_mouse_hover() -> None:
 async def test_change_tree_cursor_row_uses_background_without_overriding_token_colors() -> None:
     app = DffApp(sample_changes())
 
-    async with app.run_test() as pilot:
+    async with app.run_test(size=(180, 40)) as pilot:
         await pilot.pause()
         tree = app.query_one(ChangeTree)
         strip = tree.render_line(0)

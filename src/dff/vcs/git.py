@@ -3,8 +3,11 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from dff.models import Change, FileChange, HunkStats
+from dff.models import Change, FileChange, FileSides, HunkStats
 from dff.vcs.base import BackendError
+
+STAGED_CHANGE_ID = "git-staged"
+UNSTAGED_CHANGE_ID = "git-unstaged"
 
 
 class GitBackend:
@@ -14,19 +17,70 @@ class GitBackend:
     def list_changes(self, *, rev: str | None = None) -> tuple[Change, ...]:
         staged = self._collect_change(
             description="Staged",
-            change_id="git-staged",
+            change_id=STAGED_CHANGE_ID,
             graph="●",
             name_status_args=["diff", "--cached", "--name-status", "-z", "-M"],
             numstat_args=["diff", "--cached", "--numstat", "-z", "-M"],
         )
         unstaged = self._collect_change(
             description="Unstaged",
-            change_id="git-unstaged",
+            change_id=UNSTAGED_CHANGE_ID,
             graph="○",
             name_status_args=["diff", "--name-status", "-z", "-M"],
             numstat_args=["diff", "--numstat", "-z", "-M"],
         )
         return tuple(change for change in (staged, unstaged) if change is not None)
+
+    def get_sides(self, change: Change, file: FileChange) -> FileSides:
+        if change.change_id == STAGED_CHANGE_ID:
+            before_source = self._read_head(file.old_path or file.path) if file.status != "A" else None
+            after_source = self._read_index(file.path) if file.status != "D" else None
+        elif change.change_id == UNSTAGED_CHANGE_ID:
+            before_source = self._read_index(file.path) if file.status != "A" else None
+            after_source = self._read_worktree(file.path) if file.status != "D" else None
+        else:
+            raise ValueError(f"Unknown git change id: {change.change_id!r}")
+
+        if file.is_binary or _bytes_look_binary(before_source) or _bytes_look_binary(after_source):
+            return FileSides(before="", after="", binary=True)
+        return FileSides(before=_decode(before_source), after=_decode(after_source))
+
+    def _read_head(self, path: str) -> bytes | None:
+        try:
+            return self._run_bytes("show", f"HEAD:{path}")
+        except BackendError:
+            return None
+
+    def _read_index(self, path: str) -> bytes | None:
+        try:
+            return self._run_bytes("show", f":{path}")
+        except BackendError:
+            return None
+
+    def _read_worktree(self, path: str) -> bytes | None:
+        target = self.repo_root / path
+        if not target.exists():
+            return None
+        return target.read_bytes()
+
+    def _run_bytes(self, *args: str) -> bytes:
+        try:
+            completed = subprocess.run(
+                ["git", *args],
+                cwd=self.repo_root,
+                check=True,
+                capture_output=True,
+                text=False,
+            )
+        except FileNotFoundError as exc:
+            raise BackendError("git is not installed or not on PATH") from exc
+        except subprocess.CalledProcessError as exc:
+            raise BackendError(
+                exc.stderr.decode(errors="replace").strip()
+                or exc.stdout.decode(errors="replace").strip()
+                or "git command failed"
+            ) from exc
+        return completed.stdout
 
     def _collect_change(
         self,
@@ -108,3 +162,15 @@ class GitBackend:
                 continue
             stats[path] = HunkStats(int(added_text), int(removed_text))
         return stats, binary_paths
+
+
+def _bytes_look_binary(data: bytes | None) -> bool:
+    if data is None:
+        return False
+    return b"\x00" in data[:8000]
+
+
+def _decode(data: bytes | None) -> str:
+    if data is None:
+        return ""
+    return data.decode(errors="replace")
