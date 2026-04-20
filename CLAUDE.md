@@ -143,6 +143,25 @@ feature — never commit formatting noise separately.
   "Visual design" in `README.md`.
 - **Screen and all layout containers are transparent.** Solid
   `$surface` is only for overlays (help, confirms, popups).
+- **Do not trust `background: transparent` on widgets alone.** Textual's
+  default `App` CSS still paints a background, including under `App:ansi`.
+  When working on transparency, explicitly neutralize `App`, `App:ansi`,
+  `Screen`, and every non-overlay container in `app.tcss`.
+- **Set `self.theme = "textual-ansi"` at runtime in `on_mount()`.** Do
+  not rely on a class attribute for this repo; verify `app.ansi_color is
+  True` in tests when transparency depends on ANSI defaults.
+- **Status / footer rows must own their trailing whitespace.** If a
+  `Static`-like widget renders one line of hints, its `render_line()` must
+  pad the rest of the row with a transparent style; otherwise terminal-
+  default fill can show up as dark / light blocks at the line edges.
+- **When using bracket disclosure markers like `[-]`, compact guides are
+  4-cell guides, not a shifted 3-cell tree.** Do not fake alignment by
+  shifting whole lines; render the guide strings so child rows align under
+  the `-` inside `[-]`.
+- **Transparency bugs must be verified at the rendered-segment level.** Do
+  not stop at `widget.styles.background`. Inspect `render_line()` segment
+  styles and, if needed, `export_screenshot()` SVG output to confirm there
+  is no filled background rectangle in the final render.
 - **Reactive state lives on `App`** when shared across widgets; on the
   widget itself when local. Don't pass mutable state through init args
   — use Textual messages for widget-to-widget communication.

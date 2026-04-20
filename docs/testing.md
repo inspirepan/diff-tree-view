@@ -24,21 +24,21 @@ uv run pytest -m smoke              # CI-only tmux smoke layer
 
 ### 1.1 Detect (`vcs/detect.py`)
 
-- [ ] Picks `jj` when only `.jj/` is present.
-- [ ] Picks `git` when only `.git/` is present.
-- [ ] Picks `jj` when both are present (default `vcs.prefer = auto`).
-- [ ] `--backend git` overrides auto-detect.
-- [ ] Raises a clear error when neither is present.
-- [ ] Walks up parent dirs to find the repo root.
+- [x] Picks `jj` when only `.jj/` is present.
+- [x] Picks `git` when only `.git/` is present.
+- [x] Picks `jj` when both are present (default `vcs.prefer = auto`).
+- [x] `--backend git` overrides auto-detect.
+- [x] Raises a clear error when neither is present.
+- [x] Walks up parent dirs to find the repo root.
 
 ### 1.2 git backend (`vcs/git.py`)
 
-- [ ] `list_changes()` returns a `Staged` and an `Unstaged` group.
-- [ ] `Staged` is empty when nothing is staged; group is omitted from tree.
-- [ ] `Unstaged` lists modified tracked files.
-- [ ] File status parses to `M` / `A` / `D` / `R` correctly (incl. renames
+- [x] `list_changes()` returns a `Staged` and an `Unstaged` group.
+- [x] `Staged` is empty when nothing is staged; group is omitted from tree.
+- [x] `Unstaged` lists modified tracked files.
+- [x] File status parses to `M` / `A` / `D` / `R` correctly (incl. renames
       with similarity score).
-- [ ] `+N -N` stats match `git diff --numstat`.
+- [x] `+N -N` stats match `git diff --numstat`.
 - [ ] `get_sides(path)` returns `(HEAD_content, index_content)` for staged
       and `(index_content, worktree_content)` for unstaged.
 - [ ] Binary files flagged and skipped from diff rendering.
@@ -49,6 +49,7 @@ uv run pytest -m smoke              # CI-only tmux smoke layer
 
 ### 1.3 jj backend (`vcs/jj.py`)
 
+- [x] `list_changes()` returns the requested revset's file groups for the tree.
 - [ ] `list_changes()` uses the configured revset (default `trunk()..@`).
 - [ ] Revset fallback to `@-::@` when `trunk()` is unconfigured.
 - [ ] `--rev` CLI flag overrides config.
@@ -67,7 +68,7 @@ uv run pytest -m smoke              # CI-only tmux smoke layer
 
 ### 1.4 Backend abstract surface (`vcs/base.py`)
 
-- [ ] `Backend` protocol is satisfied by both `GitBackend` and `JjBackend`
+- [x] `Backend` protocol is satisfied by both `GitBackend` and `JjBackend`
       (checked via `@runtime_checkable` + isinstance).
 - [ ] `FileChange` instances are hashable (used as dict keys in UI).
 - [ ] `Change.stats()` aggregates file-level `+N -N` correctly.
@@ -114,15 +115,27 @@ uv run pytest -m smoke              # CI-only tmux smoke layer
 
 ### 4.1 Change tree (`widgets/change_tree.py`)
 
-- [ ] Renders one group per change (jj) or `Staged` / `Unstaged` (git).
-- [ ] Displays `M/A/D/R` badges with correct colors.
-- [ ] Displays `+N -N` per file and aggregate per group.
-- [ ] `j` / `k` navigate items, wrapping at ends or stopping (per config).
-- [ ] `J` / `K` jump to next/prev change group.
-- [ ] `Enter` / `Space` on a directory folds/unfolds it.
-- [ ] Single-child directories auto-collapse when configured.
-- [ ] Ignored files (glob) render dimmed.
-- [ ] Conflict files render with `!` badge in red.
+- [x] Renders one group per change (jj) or `Staged` / `Unstaged` (git).
+- [x] Displays `M/A/D/R` badges with correct colors.
+- [x] Displays `+N -N` per file and aggregate per group.
+- [x] `j` / `k` navigate items, wrapping at ends or stopping (per config).
+- [x] `J` / `K` jump to next/prev change group.
+- [x] `Enter` / `Space` on a directory folds/unfolds it.
+- [x] Single-child directories auto-collapse when configured.
+- [x] Ignored files (glob) render dimmed.
+- [x] Conflict files render with `!` badge in red.
+- [x] Uses compact guides so nested branches render as `└─` instead of `└──`.
+- [x] Uses `[+]` / `[-]` disclosure markers for collapsed / expanded tree nodes.
+- [x] Mouse hover does not highlight rows or guides.
+- [x] Compact bracket guides align child rows under the `-` in `[-]`.
+- [x] Built-in dark tree tokens use `klaude-code` hex colors for disclosure,
+      guides, and status badges.
+- [x] Focused tree rows add a background without overriding tokenized text
+      colors.
+- [x] File stats render as `(+a,-b)` with parens/comma in guides color.
+- [x] Status letter is right-aligned to the tree's visible right edge,
+      with stats placed immediately before it.
+- [x] Tree panel draws a `vkey` right border tinted with the guides color.
 
 ### 4.2 Diff panel (`widgets/diff_panel.py`)
 
@@ -174,7 +187,8 @@ uv run pytest -m smoke              # CI-only tmux smoke layer
 
 ### 4.6 Status bar (`widgets/status_bar.py`)
 
-- [ ] Renders hints separated by `·`.
+- [x] Renders hints separated by `•`.
+- [x] Uses `klaude-code` hex colors for keys, labels, and separators.
 - [ ] Hints change based on focused widget (context-aware).
 - [ ] `?` opens help overlay; `Esc` closes it.
 
@@ -194,18 +208,18 @@ uv run pytest -m smoke              # CI-only tmux smoke layer
 
 ### 5.2 Watcher (`vcs/watcher.py`)
 
-- [ ] Edit to a tracked file triggers a single reload (events
+- [x] Edit to a tracked file triggers a single reload (events
       debounced ≤ `debounce_ms`).
-- [ ] Burst of 20 edits within the debounce window coalesces to one
-      reload.
+- [x] Burst of 5+ edits within the debounce window coalesces to
+      at most two reloads.
 - [ ] `.git/index` change (staging from another terminal) refreshes the
       tree.
 - [ ] `.jj/` snapshot write refreshes the tree.
 - [ ] `.gitignore` / `.jjignore` / `extra_ignore_globs` paths do NOT
       trigger reloads.
 - [ ] Scroll position and expanded folds survive a reload when possible.
-- [ ] Manual `r` forces a reload bypassing debounce.
-- [ ] `vcs.watch = false` disables the watcher cleanly.
+- [x] Manual `r` forces a reload.
+- [x] `live_watch=False` disables the watcher cleanly.
 
 ### 5.3 Conflict display
 
@@ -231,6 +245,36 @@ uv run pytest -m smoke              # CI-only tmux smoke layer
       labels.
 - [ ] Restart (`q` then relaunch) does NOT persist comments (in-session
       only for v0.1/v0.2).
+
+### 5.5 Initial app launch
+
+- [x] `dff` auto-detects the repo backend and launches the tree view app.
+- [x] App uses `textual-ansi` with transparent Screen and tree backgrounds.
+- [x] Global `q` binding quits the initial tree view.
+
+### 5.6 UI appearance settings
+
+- [x] `UISettings` defaults to transparent background, compact guides,
+      bracket disclosure markers, single-child path collapsing, and the
+      built-in dark tree tokens.
+- [x] `DffApp` applies transparent / opaque mode from `UISettings`.
+- [x] `ChangeTree` applies built-in or custom tree color tokens from
+      `UISettings`.
+- [x] `ChangeTree` applies disclosure marker style and guide density from
+      `UISettings`.
+
+### 5.7 Terminal theme auto-detection (`terminal.py`)
+
+- [x] `_parse_rgb_spec` decodes `rgb:RRRR/GGGG/BBBB` and `#rrggbb` forms.
+- [x] `_scale_hex_component` rescales 1-4 digit hex components to 0-255.
+- [x] `_parse_osc_color_response` pulls the RGB triple out of a full
+      `ESC ] 11 ; ... BEL` reply.
+- [x] `_luminance_is_light` uses the `0.299R + 0.587G + 0.114B > 128`
+      threshold.
+- [x] `detect_tree_theme_name` returns `LIGHT` / `DARK` based on the
+      parsed terminal background; `None` when detection fails.
+- [x] CLI picks `BuiltinTreeThemeName.LIGHT` when no explicit theme is
+      configured and the terminal reports a light background.
 
 ---
 

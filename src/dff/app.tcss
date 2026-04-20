@@ -1,0 +1,94 @@
+* {
+    scrollbar-background: transparent;
+    scrollbar-background-hover: transparent;
+    scrollbar-background-active: transparent;
+}
+
+App.-transparent {
+    background: transparent;
+}
+
+App.-transparent:ansi {
+    color: ansi_default;
+}
+
+App.-transparent Screen {
+    background: transparent;
+}
+
+App.-opaque {
+    background: $surface;
+}
+
+App.-opaque:ansi {
+    color: ansi_default;
+}
+
+App.-opaque Screen {
+    background: $surface;
+}
+
+#app-shell {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+}
+
+ChangeTree {
+    width: 100%;
+    height: 1fr;
+    border: none;
+    color: ansi_default;
+    scrollbar-size-vertical: 1;
+    scrollbar-size-horizontal: 1;
+}
+
+App.-transparent ChangeTree {
+    background: transparent;
+}
+
+App.-opaque ChangeTree {
+    background: $surface;
+}
+
+ChangeTree > .tree--cursor {
+    background: transparent;
+    text-style: none;
+}
+
+ChangeTree:focus {
+    background-tint: 0%;
+}
+
+ChangeTree:focus > .tree--cursor {
+    background: transparent;
+    text-style: none;
+}
+
+ChangeTree > .tree--guides-selected,
+ChangeTree:focus > .tree--guides-selected {
+    color: $foreground 35%;
+}
+
+ChangeTree > .tree--guides-hover {
+    color: $foreground 35%;
+}
+
+ChangeTree > .tree--label,
+ChangeTree > .tree--guides,
+ChangeTree > .tree--guides-hover,
+ChangeTree > .tree--guides-selected,
+ChangeTree > .tree--cursor,
+ChangeTree > .tree--highlight,
+ChangeTree > .tree--highlight-line {
+    background: transparent;
+    text-style: none;
+}
+
+#status-bar {
+    width: 100%;
+    height: 1;
+    background: transparent;
+    padding: 0;
+    overflow: hidden hidden;
+}
