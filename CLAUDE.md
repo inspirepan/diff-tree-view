@@ -189,6 +189,45 @@ during `--snapshot-update` runs); just leave them to gitignore.
 
 ---
 
+## Publishing to PyPI
+
+The package is published as [`diff-tree-view`](https://pypi.org/project/diff-tree-view/)
+on the real PyPI index. Distribution name is `diff-tree-view`; import /
+module name is `diff_tree_view` (wired via `[tool.uv.build-backend]
+module-name`). The CLI entry point is `dff` (see `[project.scripts]`).
+
+Auth: the user exports `UV_PUBLISH_TOKEN` in their shell (a PyPI API
+token). `uv publish` picks it up automatically — do not pass `--token`
+on the command line, and never write the token to a file.
+
+Release flow (from a clean worktree, on the release commit):
+
+```bash
+# 1. bump version in pyproject.toml, commit it
+# 2. build fresh artifacts
+trash dist 2>/dev/null; uv build
+# 3. sanity-check metadata (catches README / long-description issues)
+uv run --with twine twine check dist/*
+# 4. publish to PyPI
+uv publish dist/*
+# 5. verify
+curl -sS https://pypi.org/pypi/diff-tree-view/json | jq '.info.version'
+```
+
+Hard rules:
+
+- **A `name+version` on PyPI is immutable.** You cannot re-upload or
+  overwrite. If a release is broken, bump the version and publish again
+  — never try to "fix" an existing release.
+- **Always build from a clean `dist/`.** Stale wheels from a previous
+  version will get uploaded alongside the new one.
+- **Do not use TestPyPI tokens against PyPI or vice versa.** They are
+  different accounts; a misrouted `uv publish` will 403.
+- Tag the release in git (`git tag vX.Y.Z && git push --tags`) *after*
+  `uv publish` succeeds, so the tag only exists for published versions.
+
+---
+
 ## Checklist before "done"
 
 Before reporting a feature as complete:
