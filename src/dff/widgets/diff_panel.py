@@ -3,6 +3,7 @@ from __future__ import annotations
 import difflib
 from typing import Any
 
+from pygments.token import Token
 from rich.style import Style
 from rich.text import Text
 from textual import containers, events
@@ -11,6 +12,7 @@ from textual._segment_tools import line_pad
 from textual.app import ComposeResult
 from textual.containers import Vertical, VerticalScroll
 from textual.content import Content, Span
+from textual.highlight import HighlightTheme
 from textual.message import Message
 from textual.reactive import reactive
 from textual.strip import Strip
@@ -29,6 +31,12 @@ from dff.models import Change, FileChange, FileSides
 from dff.theme import TreeThemeTokens
 
 Opcode = tuple[str, int, int, int, int]
+
+# Textual's default HighlightTheme underlines function names, which reads as
+# a stray link/error marker inside a dense diff view. Drop the attribute while
+# keeping the accent color so tokens still stand out from body text.
+HighlightTheme.STYLES[Token.Name.Function] = "$text-warning"
+HighlightTheme.STYLES[Token.Name.Function.Magic] = "$text-warning"
 
 
 class ExpandableEllipsis(Static):
@@ -162,7 +170,7 @@ class TransparentDiffView(DiffView):
         # DiffScrollContainer scrolls independently and the file appears to
         # "tear" between hunks when the user scrolls right).
         self._check_auto_split(self.size.width)
-        self._link_horizontal_scroll()
+        self.call_after_refresh(self._link_horizontal_scroll)
 
     def watch_split(self, old: bool, new: bool) -> None:
         # `split` is `recompose=True`, so toggling it remounts every child.

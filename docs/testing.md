@@ -144,6 +144,7 @@ uv run pytest -m smoke              # CI-only tmux smoke layer
 - [x] `m` toggles `split` ↔ `unified`.
 - [x] `w` toggles word wrap; preserves scroll position.
 - [ ] Language auto-detected from filename for syntax highlighting.
+- [x] Syntax theme renders function names without an underline.
 - [ ] Large file (> `performance.max_file_lines`) falls back to plain
       text with a notice pill.
 - [x] DiffPanel and nested DiffView / .diff-group / VerticalScroll

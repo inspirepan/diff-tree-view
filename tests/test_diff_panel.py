@@ -227,3 +227,16 @@ async def test_diff_panel_click_ellipsis_expands_hidden_lines(tmp_path: Path) ->
         )
         # Hidden equal lines now visible → code row count strictly increased.
         assert expanded_code_rows > initial_code_rows
+
+
+def test_syntax_theme_drops_underline_on_function_names() -> None:
+    # Importing diff_panel installs the syntax-theme override; assert the
+    # function-name styles no longer carry the `underline` attribute that
+    # Textual's default HighlightTheme ships with.
+    from pygments.token import Token
+    from textual.highlight import HighlightTheme
+
+    import dff.widgets.diff_panel  # noqa: F401
+
+    assert "underline" not in HighlightTheme.STYLES[Token.Name.Function]
+    assert "underline" not in HighlightTheme.STYLES[Token.Name.Function.Magic]
