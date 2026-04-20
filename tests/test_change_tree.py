@@ -356,7 +356,7 @@ async def test_change_tree_cursor_row_uses_background_without_overriding_token_c
         strip = tree.render_line(0)
 
         rich_cursor_style = tree.get_component_rich_style("tree--cursor", partial=False)
-        assert rich_cursor_style.bgcolor == Color.parse("#343a44")
+        assert rich_cursor_style.bgcolor == Color.parse("#545c6c")
         assert rich_cursor_style.color in {None, Color.default()}
         assert rich_cursor_style.bold in {None, False}
 
@@ -365,7 +365,7 @@ async def test_change_tree_cursor_row_uses_background_without_overriding_token_c
             for segment in strip._segments
             if segment.text.strip() and segment.style is not None
         ]
-        assert any(style.bgcolor == Color.parse("#343a44") for _, style in colored_segments)
+        assert any(style.bgcolor == Color.parse("#545c6c") for _, style in colored_segments)
         assert any(style.color == Color.parse("#e8b040") for text, style in colored_segments if "@" in text)
         assert any(style.color == Color.parse("#4fb06c") for text, style in colored_segments if "+42" in text)
 

@@ -10,7 +10,7 @@ from dff.vcs.watcher import watch_repo
 from dff.widgets import ChangeTree
 
 
-def node_label_plain(node) -> str:  # type: ignore[no-untyped-def]
+def node_label_plain(node) -> str:
     label = node.label
     return label if isinstance(label, str) else label.plain
 
@@ -172,7 +172,7 @@ async def test_dff_app_reload_action_refreshes_tree_from_backend(tmp_path: Path)
 
         found = []
 
-        def collect(node):  # type: ignore[no-untyped-def]
+        def collect(node):
             found.append(node_label_plain(node))
             for child in node.children:
                 collect(child)

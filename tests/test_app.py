@@ -43,7 +43,7 @@ async def test_dff_app_uses_textual_ansi_and_transparent_backgrounds() -> None:
             assert bgcolor is None or bgcolor.is_default
 
         cursor_style = tree.get_component_rich_style("tree--cursor", partial=False)
-        assert cursor_style.bgcolor == Color.parse("#343a44")
+        assert cursor_style.bgcolor == Color.parse("#545c6c")
         assert cursor_style.color in {None, Color.default()}
 
 

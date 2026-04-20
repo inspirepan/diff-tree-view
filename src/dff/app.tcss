@@ -87,6 +87,15 @@ DiffHeader {
     color: $foreground 60%;
 }
 
+/* Mouse/keyboard text selection: Textual pulls `selection_style` from
+   `Screen.screen--selection`, NOT from the selected widget itself. Upstream
+   default is `$primary 50%`, which renders as the saturated ANSI blue the
+   user flagged. Override on Screen so selection reads as a soft highlight. */
+Screen > .screen--selection {
+    background: #c6d6eb;
+    color: #101827;
+}
+
 App.-transparent DiffPanel,
 App.-transparent DiffView,
 App.-transparent DiffView .diff-group,

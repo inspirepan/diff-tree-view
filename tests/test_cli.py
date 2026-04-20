@@ -70,7 +70,7 @@ def test_cli_applies_detected_light_theme(monkeypatch) -> None:
 
     original_init = DffApp.__init__
 
-    def capturing_init(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+    def capturing_init(self, *args, **kwargs):
         captured["ui"] = kwargs.get("ui")
         original_init(self, *args, **kwargs)
 
@@ -96,7 +96,7 @@ def test_cli_leaves_default_theme_when_detection_fails(monkeypatch) -> None:
 
     original_init = DffApp.__init__
 
-    def capturing_init(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+    def capturing_init(self, *args, **kwargs):
         captured["ui"] = kwargs.get("ui")
         original_init(self, *args, **kwargs)
 
