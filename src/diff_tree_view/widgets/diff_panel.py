@@ -248,21 +248,47 @@ class TransparentDiffView(DiffView):
         message.stop()
         self._expanded_gaps = self._expanded_gaps | {message.gap_index}
 
-    def _effective_groups(self) -> tuple[list[list[Opcode]], list[tuple[int, int]]]:
-        """Merge `grouped_opcodes` at every expanded gap and report remaining gaps.
+    def _effective_groups(
+        self,
+    ) -> tuple[
+        list[list[Opcode]],
+        tuple[int, int] | None,
+        list[tuple[int, int]],
+        tuple[int, int] | None,
+    ]:
+        """Merge `grouped_opcodes` at every expanded gap and report hidden regions.
 
         Returns:
-            (groups, gaps) where `groups` is a list of opcode lists (merged
-            at expanded boundaries) and `gaps` is a list of
-            `(original_gap_index, hidden_line_count)` tuples, one entry per
-            boundary between consecutive `groups`. `len(gaps) == len(groups) - 1`.
+            `(groups, leading_gap, middle_gaps, trailing_gap)` where each gap
+            value is `(gap_index, hidden_line_count)`.
+
+            `gap_index` semantics:
+            - `-1`: hidden region before the first emitted hunk
+            - `0..N-2`: hidden regions between grouped hunks (same as before)
+            - `N-1`: hidden region after the last emitted hunk
         """
         base = self.grouped_opcodes
         expanded = self._expanded_gaps
         if not base:
-            return [], []
+            return [], None, [], None
+
+        lines_a, lines_b = self.highlighted_code_lines
+        leading_gap: tuple[int, int] | None = None
+        trailing_gap: tuple[int, int] | None = None
+
         groups: list[list[Opcode]] = [list(base[0])]
-        gaps: list[tuple[int, int]] = []
+        middle_gaps: list[tuple[int, int]] = []
+
+        first_head = base[0][0]
+        leading_hidden = max(first_head[1], first_head[3])
+        if leading_hidden > 0:
+            leading_index = -1
+            if leading_index in expanded:
+                leading_opcode: Opcode = ("equal", 0, first_head[1], 0, first_head[3])
+                groups[0].insert(0, leading_opcode)
+            else:
+                leading_gap = (leading_index, leading_hidden)
+
         for idx in range(1, len(base)):
             prev_tail = groups[-1][-1]
             next_head = base[idx][0]
@@ -276,9 +302,26 @@ class TransparentDiffView(DiffView):
                 groups[-1].append(gap_opcode)
                 groups[-1].extend(base[idx])
             else:
-                gaps.append((idx - 1, hidden))
+                middle_gaps.append((idx - 1, hidden))
                 groups.append(list(base[idx]))
-        return groups, gaps
+
+        last_tail = base[-1][-1]
+        trailing_hidden = max(len(lines_a) - last_tail[2], len(lines_b) - last_tail[4])
+        if trailing_hidden > 0:
+            trailing_index = len(base) - 1
+            if trailing_index in expanded:
+                trailing_opcode: Opcode = (
+                    "equal",
+                    last_tail[2],
+                    len(lines_a),
+                    last_tail[4],
+                    len(lines_b),
+                )
+                groups[-1].append(trailing_opcode)
+            else:
+                trailing_gap = (trailing_index, trailing_hidden)
+
+        return groups, leading_gap, middle_gaps, trailing_gap
 
     def _link_horizontal_scroll(self) -> None:
         containers = list(self.query(DiffScrollContainer))
@@ -363,7 +406,13 @@ class TransparentDiffView(DiffView):
                 return annotation_hatch
             return annotation_blank
 
-        groups, gaps = self._effective_groups()
+        groups, leading_gap, gaps, trailing_gap = self._effective_groups()
+        if leading_gap is not None:
+            gap_index, hidden = leading_gap
+            with containers.HorizontalGroup():
+                yield ExpandableEllipsis(gap_index, hidden, background=self._ellipsis_bg)
+                yield ExpandableEllipsis(gap_index, hidden, background=self._ellipsis_bg)
+
         for group_index, (last, group) in enumerate(loop_last(groups)):
             line_numbers_a: list[int | None] = []
             line_numbers_b: list[int | None] = []
@@ -435,6 +484,12 @@ class TransparentDiffView(DiffView):
                 with containers.HorizontalGroup():
                     yield ExpandableEllipsis(gap_index, hidden, background=self._ellipsis_bg)
                     yield ExpandableEllipsis(gap_index, hidden, background=self._ellipsis_bg)
+
+        if trailing_gap is not None:
+            gap_index, hidden = trailing_gap
+            with containers.HorizontalGroup():
+                yield ExpandableEllipsis(gap_index, hidden, background=self._ellipsis_bg)
+                yield ExpandableEllipsis(gap_index, hidden, background=self._ellipsis_bg)
 
     def _compose_split_wrap_clean(self) -> ComposeResult:
         # Mirror of upstream `_compose_split_wrap` that swaps the two `╲`
@@ -589,7 +644,11 @@ class TransparentDiffView(DiffView):
         max_line_no = max(len(lines_a), len(lines_b))
         line_number_width = len(str(max_line_no)) if max_line_no else 1
 
-        groups, gaps = self._effective_groups()
+        groups, leading_gap, gaps, trailing_gap = self._effective_groups()
+        if leading_gap is not None:
+            gap_index, hidden = leading_gap
+            yield ExpandableEllipsis(gap_index, hidden, background=self._ellipsis_bg)
+
         for group_index, (last, group) in enumerate(loop_last(groups)):
             line_numbers_a: list[int | None] = []
             line_numbers_b: list[int | None] = []
@@ -665,6 +724,10 @@ class TransparentDiffView(DiffView):
             if not last:
                 gap_index, hidden = gaps[group_index]
                 yield ExpandableEllipsis(gap_index, hidden, background=self._ellipsis_bg)
+
+        if trailing_gap is not None:
+            gap_index, hidden = trailing_gap
+            yield ExpandableEllipsis(gap_index, hidden, background=self._ellipsis_bg)
 
 
 class DiffHeader(Static):

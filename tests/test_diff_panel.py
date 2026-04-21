@@ -206,7 +206,7 @@ async def test_diff_panel_click_ellipsis_expands_hidden_lines(tmp_path: Path) ->
         await pilot.pause()
 
         view = panel.query_one(TransparentDiffView)
-        # Two hunks → exactly one expandable gap between them.
+        # Two hunks should expose at least one expandable gap marker.
         ellipses = list(view.query(ExpandableEllipsis))
         assert ellipses, "expected at least one ExpandableEllipsis between hunks"
         gap_index = ellipses[0].gap_index
@@ -219,13 +219,60 @@ async def test_diff_panel_click_ellipsis_expands_hidden_lines(tmp_path: Path) ->
         await pilot.pause()
 
         assert gap_index in view._expanded_gaps
-        # After expansion, the ellipsis for that gap is gone (it was the only gap).
-        assert not list(view.query(ExpandableEllipsis))
+        # After expansion, that specific gap marker should be gone.
+        assert all(ellipsis.gap_index != gap_index for ellipsis in view.query(ExpandableEllipsis))
         expanded_code_rows = sum(
             sum(1 for line in dc._render().code_lines if line is not None)  # ty: ignore[unresolved-attribute]
             for dc in view.query("DiffCode")
         )
         # Hidden equal lines now visible → code row count strictly increased.
+        assert expanded_code_rows > initial_code_rows
+
+
+async def test_diff_panel_click_leading_ellipsis_expands_hidden_lines(tmp_path: Path) -> None:
+    before = "\n".join(f"line{i}" for i in range(1, 61)) + "\n"
+    # Keep one change near the bottom so the top unchanged region is folded.
+    after = before.replace("line26", "LINE26")
+    sides = {
+        "src/a.py": FileSides(before=before, after=after),
+        "src/b.bin": FileSides(before="", after="", binary=True),
+    }
+    backend = StubBackend(tmp_path, sides)
+    app = DiffTreeViewApp(backend.list_changes(), backend=backend, live_watch=False)
+
+    async with app.run_test(size=(180, 40)) as pilot:
+        await pilot.pause()
+        tree = app.query_one(ChangeTree)
+        panel = app.query_one(DiffPanel)
+
+        for _ in range(6):
+            await pilot.press("j")
+            await pilot.pause()
+            node = tree.cursor_node
+            if node is not None and node.data is not None and node.data.file is not None:
+                if node.data.file.path == "src/a.py":
+                    break
+        await pilot.pause()
+
+        view = panel.query_one(TransparentDiffView)
+        ellipses = list(view.query(ExpandableEllipsis))
+        assert ellipses, "expected fold markers for large unchanged regions"
+        leading = next((ellipsis for ellipsis in ellipses if ellipsis.gap_index == -1), None)
+        assert leading is not None, "expected a leading fold marker before the first hunk"
+
+        initial_code_rows = sum(
+            sum(1 for line in dc._render().code_lines if line is not None)  # ty: ignore[unresolved-attribute]
+            for dc in view.query("DiffCode")
+        )
+
+        leading.post_message(ExpandableEllipsis.Activated(leading.gap_index))
+        await pilot.pause()
+
+        assert leading.gap_index in view._expanded_gaps
+        expanded_code_rows = sum(
+            sum(1 for line in dc._render().code_lines if line is not None)  # ty: ignore[unresolved-attribute]
+            for dc in view.query("DiffCode")
+        )
         assert expanded_code_rows > initial_code_rows
 
 

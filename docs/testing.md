@@ -164,6 +164,8 @@ uv run pytest -m smoke              # CI-only tmux smoke layer
       always_expand_small` are folded.
 - [ ] Each fold renders an `N hidden lines ▾` marker.
 - [x] Clicking the marker expands that fold only.
+- [x] Leading/trailing hidden regions (before first hunk / after last hunk)
+      also render expandable fold markers.
 - [ ] `Enter` on the fold marker (keyboard) also expands.
 - [ ] Expanded state survives a watcher refresh when the hunk map still
       contains the same region.
