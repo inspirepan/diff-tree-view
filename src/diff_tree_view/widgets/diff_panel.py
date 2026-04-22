@@ -828,7 +828,9 @@ class DiffPanel(Vertical):
         assert self._header is not None
         assert self._body is not None
         self._header.set_text(Text())
-        await self._replace_body_content(Static("Select a file to view its diff", classes="diff-placeholder diff-empty"))
+        await self._replace_body_content(
+            Static("Select a file to view its diff", classes="diff-placeholder diff-empty")
+        )
         self._current_key = None
 
     async def _replace_body_content(self, widget: Static | TransparentDiffView) -> None:

@@ -91,6 +91,29 @@ def test_jj_backend_get_sides_returns_parent_and_current(tmp_path: Path) -> None
     assert not added.binary
 
 
+def test_jj_backend_get_sides_reads_paths_with_fileset_meta_characters(tmp_path: Path) -> None:
+    run(["jj", "git", "init", "."], tmp_path)
+    target = tmp_path / "src" / "(console)" / "view.tsx"
+    target.parent.mkdir(parents=True)
+    target.write_text("before\n")
+    run(["jj", "file", "track", 'file:"src/(console)/view.tsx"'], tmp_path)
+    run(["jj", "describe", "-m", "base"], tmp_path)
+    run(["jj", "bookmark", "create", "trunk", "-r", "@"], tmp_path)
+    run(["jj", "new", "trunk"], tmp_path)
+    target.write_text("before\nafter\n")
+    run(["jj", "describe", "-m", "feature"], tmp_path)
+
+    backend = JjBackend(tmp_path)
+    change = backend.list_changes(rev="@")[0]
+    file = next(f for f in change.files if f.path == "src/(console)/view.tsx")
+
+    sides = backend.get_sides(change, file)
+
+    assert sides.before == "before\n"
+    assert sides.after == "before\nafter\n"
+    assert not sides.binary
+
+
 def test_jj_backend_get_sides_flags_binary(tmp_path: Path) -> None:
     run(["jj", "git", "init", "."], tmp_path)
     (tmp_path / "seed.txt").write_text("seed\n")

@@ -62,6 +62,8 @@ uv run pytest -m smoke              # CI-only tmux smoke layer
       parse cleanly into full before/after paths.
 - [x] `get_sides(change_id, path)` uses `jj file show -r <id>-` and
       `-r <id>` for before/after.
+- [x] `get_sides(change_id, path)` quotes fileset meta characters in
+      paths (for example `(console)`).
 - [ ] Root `change_id` = `zzzzzzzz` is handled (no parent).
 - [ ] Empty description rendered as `(no description set)`.
 - [ ] Conflict detection via `jj resolve --list`.

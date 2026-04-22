@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -118,7 +119,7 @@ class JjBackend:
 
     def _read_at(self, revision: str, path: str) -> bytes | None:
         try:
-            return self._run_bytes("file", "show", "-r", revision, path)
+            return self._run_bytes("file", "show", "-r", revision, _root_file_fileset(path))
         except BackendError:
             return None
 
@@ -167,3 +168,7 @@ def _decode(data: bytes | None) -> str:
     if data is None:
         return ""
     return data.decode(errors="replace")
+
+
+def _root_file_fileset(path: str) -> str:
+    return f"root-file:{json.dumps(path)}"
