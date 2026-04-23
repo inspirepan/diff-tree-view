@@ -73,6 +73,26 @@ async def test_dff_app_renders_status_bar_hints() -> None:
         assert "m split" not in status_text.plain
 
 
+async def test_dff_app_renders_split_unified_hint_when_supported() -> None:
+    app = DiffTreeViewApp(
+        [
+            Change(
+                change_id="demo",
+                short_id="demo",
+                description="Demo",
+                files=(FileChange("demo.py", "M", HunkStats(1, 0)),),
+            )
+        ]
+    )
+
+    async with app.run_test(size=(180, 40)) as pilot:
+        await pilot.pause()
+        status_bar = app.query_one(StatusBar)
+        status_text = status_bar.render()
+
+        assert "m split/unified" in status_text.plain
+
+
 async def test_dff_app_stacks_tree_above_diff_panel() -> None:
     app = DiffTreeViewApp(
         [

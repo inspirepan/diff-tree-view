@@ -38,11 +38,11 @@ class StatusBar(Static):
             ("↓/j", key_style, " down", label_style),
             ("enter/space", key_style, " toggle", label_style),
         ]
-        # `m` forces split view — useless when the diff panel is narrow enough
+        # `m` toggles split/unified — useless when the diff panel is narrow enough
         # that split auto-degrades to unified. Hide the hint so it doesn't
         # mislead the user.
         if self._split_supported():
-            hints.append(("m", key_style, " split", label_style))
+            hints.append(("m", key_style, " split/unified", label_style))
         hints.append(("z", key_style, " wrap", label_style))
         hints.append(("d/u", key_style, " diff scroll", label_style))
         hints.append(("q", key_style, " quit", label_style))

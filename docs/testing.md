@@ -206,6 +206,7 @@ uv run pytest -m smoke              # CI-only tmux smoke layer
 ### 4.6 Status bar (`widgets/status_bar.py`)
 
 - [x] Renders hints separated by `•`.
+- [x] Shows `m split/unified` only when the diff panel is wide enough to support split mode.
 - [x] Uses `klaude-code` hex colors for keys, labels, and separators.
 - [ ] Hints change based on focused widget (context-aware).
 - [ ] `?` opens help overlay; `Esc` closes it.
